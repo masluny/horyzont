@@ -64,7 +64,7 @@ func _make_materials() -> void:
 		"round": [Vector3(0.36, 0.48, 0.23), Vector3(0.26, 0.4, 0.17)],
 		"olive": [Vector3(0.42, 0.47, 0.36), Vector3(0.33, 0.38, 0.29)],
 		"pine": [Vector3(0.42, 0.52, 0.36), Vector3(0.32, 0.43, 0.29)],
-		"bush": [Vector3(0.3, 0.42, 0.2), Vector3(0.24, 0.36, 0.14)],
+		"bush": [Vector3(0.24, 0.33, 0.17), Vector3(0.19, 0.28, 0.12)],
 	}
 	_table_data.resize(TABLE_WIDTH * VARIANTS.size() * ROWS_PER_VARIANT * 4)
 	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * ROWS_PER_VARIANT, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())
@@ -133,7 +133,10 @@ func _scatter(extra: Array[Vector3]) -> void:
 			var px := clampi(int((x + half) / texel), 0, size - 1)
 			var pz := clampi(int((z + half) / texel), 0, size - 1)
 			var i := (pz * size + px) * 4
-			var keep := eco[i + 2] / 255.0 * 0.62 + eco[i + 1] / 255.0 * 0.55
+			# Thickets, not an even sprinkle.
+			var thicket := sin(x * 0.0127 + sin(z * 0.0091) * 2.0) * cos(z * 0.0143 - sin(x * 0.0071) * 2.0) * 0.5 + 0.5
+			thicket = clampf((thicket - 0.42) * 3.0, 0.0, 1.0)
+			var keep := eco[i + 2] / 255.0 * 0.75 * thicket + eco[i + 1] / 255.0 * 0.5
 			if rng.randf() >= keep:
 				continue
 			var h := _data.height_at(x, z)

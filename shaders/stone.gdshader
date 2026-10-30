@@ -38,7 +38,7 @@ void fragment() {
 	float phase = custom.a * 6.283;
 	vec3 grey = vec3(0.30, 0.29, 0.27);
 	vec3 brown = vec3(0.32, 0.24, 0.17);
-	vec3 base = mix(grey, brown, warm) * (0.58 + 0.34 * value);
+	vec3 base = mix(grey, brown, warm) * (0.95 + 0.5 * value);
 	// Triplanar-ish: top and side samples blended by the world normal.
 	float n_top = vnoise(wpos * vec3(3.4, 1.3, 3.4) + vec3(phase, 0.0, 0.0));
 	float n_side = vnoise(wpos.yxz * 2.8 + vec3(2.0, phase, 5.0));

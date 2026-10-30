@@ -99,7 +99,7 @@ func coverage_at(world_xz: Vector2) -> float:
 		return 0.0
 	var wind: Vector2 = Game.weather.wind_offset if Game.weather else Vector2.ZERO
 	var c: float = Game.weather.value("coverage") if Game.weather else 0.0
-	var uv := (world_xz * 0.001 + wind * 0.55) / 46.0
+	var uv := (world_xz * 0.001 + wind * 0.55) / 24.0
 	var px := Vector2i(posmod(int(uv.x * WEATHER_SIZE), WEATHER_SIZE), posmod(int(uv.y * WEATHER_SIZE), WEATHER_SIZE))
 	var w := weather_image.get_pixelv(px).r
 	var lo := 0.85 - c

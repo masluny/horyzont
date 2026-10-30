@@ -20,15 +20,17 @@ uniform sampler3D cloud_detail : filter_linear, repeat_enable;
 uniform sampler2D cloud_weather : filter_linear_mipmap, repeat_enable;
 
 const float CLOUD_EXTINCTION = 62.0; // per km at density 1
-const float SHAPE_TILE = 5.5;
-const float DETAIL_TILE = 0.85;
-const float WEATHER_TILE = 46.0;
+const float SHAPE_TILE = 3.7;
+const float DETAIL_TILE = 0.62;
+const float WEATHER_TILE = 24.0;
 const float CIRRUS_ALT = 8.5;
 
-float cloud_height_profile(float hf, float type, float cov) {
-	float top = mix(0.22, 1.0, type) * mix(0.45, 1.0, cov);
-	float bottom = smoothstep(0.0, mix(0.04, 0.12, type), hf);
-	float cap = 1.0 - smoothstep(top * mix(0.35, 0.65, type), top, hf);
+// dome: 0 at the edge of a cloud's footprint, 1 in its heart, so every cloud
+// rises to a crown instead of being a slab of even height.
+float cloud_height_profile(float hf, float type, float dome) {
+	float top = mix(0.24, 1.0, dome) * mix(0.38, 1.0, type);
+	float bottom = smoothstep(0.0, mix(0.03, 0.09, type), hf);
+	float cap = 1.0 - smoothstep(top * 0.62, top, hf);
 	return bottom * cap;
 }
 
@@ -46,7 +48,8 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 	vec4 w = cloud_weather_at(wp.xz);
 	float cov = cloud_local_coverage(w);
 	float type = clamp(cloud_type + (w.g - 0.5) * 0.5, 0.0, 1.0);
-	float prof = cloud_height_profile(hf, type, cov);
+	float dome = smoothstep(0.85 - cloud_coverage, 1.42 - cloud_coverage, w.r);
+	float prof = cloud_height_profile(hf, type, dome);
 	if (cov * prof < 0.01) {
 		return 0.0;
 	}
@@ -54,7 +57,7 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 	vec4 n = textureLod(cloud_shape, sp, 0.0);
 	float fbm = n.g * 0.625 + n.b * 0.25 + n.a * 0.125;
 	float base = clamp((n.r - (fbm - 1.0)) / (2.0 - fbm), 0.0, 1.0);
-	base = clamp((base - 0.18) / 0.82, 0.0, 1.0) * prof;
+	base = clamp((base - 0.2) / 0.8, 0.0, 1.0) * prof;
 	base = clamp((base - (1.0 - cov)) / max(cov, 1e-3), 0.0, 1.0) * cov;
 	if (base <= 0.0) {
 		return 0.0;
@@ -64,7 +67,7 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 		vec3 dn = textureLod(cloud_detail, dp, 0.0).rgb;
 		float dfbm = dn.r * 0.625 + dn.g * 0.25 + dn.b * 0.125;
 		float dmod = mix(dfbm, 1.0 - dfbm, clamp(hf * 5.0, 0.0, 1.0));
-		base = clamp((base - dmod * 0.42) / max(1.0 - dmod * 0.42, 1e-3), 0.0, 1.0);
+		base = clamp((base - dmod * 0.5) / max(1.0 - dmod * 0.5, 1e-3), 0.0, 1.0);
 	}
 	return base * cloud_density;
 }

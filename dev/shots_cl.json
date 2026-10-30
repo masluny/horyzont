@@ -1,2 +1,4 @@
-[ {"time": 13.0, "weather": "cumulusy", "cam": [-3000, 95, 500], "look": [-1500, 420, 300], "out": "/Users/macbookkacper/dev/horyzont/dev/out/cu1.png", "frames": 40, "width": 640},
-  {"time": 18.9, "weather": "cumulusy", "cam": [-3000, 95, 500], "look": [-1500, 300, 900], "out": "/Users/macbookkacper/dev/horyzont/dev/out/cu2.png", "frames": 40, "width": 640} ]
+[ {"time": 13.0, "weather": "cumulusy", "cam": [-3400, 30, 560], "look": [-2400, 330, 60], "out": "/Users/macbookkacper/dev/horyzont/dev/out/c_a.png", "frames": 30, "width": 1100},
+  {"time": 13.0, "weather": "cumulusy", "cam": [-3400, 30, 560], "look": [-4400, 300, 0], "out": "/Users/macbookkacper/dev/horyzont/dev/out/c_b.png", "frames": 30, "width": 1100},
+  {"time": 19.7, "weather": "cumulusy", "cam": [-3400, 30, 560], "look": [-4400, 200, -500], "out": "/Users/macbookkacper/dev/horyzont/dev/out/c_c.png", "frames": 30, "width": 1100},
+  {"time": 19.6, "weather": "burzowy_zachod", "cam": [-3400, 30, 560], "look": [-4400, 260, -500], "out": "/Users/macbookkacper/dev/horyzont/dev/out/c_d.png", "frames": 30, "width": 1100} ]

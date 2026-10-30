@@ -8,25 +8,25 @@ signal preset_changed(id: String)
 const PRESETS := {
 	"pogodnie": {
 		"name": "Pogodnie",
-		"coverage": 0.22, "type": 0.45, "density": 0.9, "bottom": 1.5, "thickness": 2.0,
+		"coverage": 0.34, "type": 0.55, "density": 0.9, "bottom": 1.4, "thickness": 2.4,
 		"cirrus": 0.35, "mie": 1.0, "fog": 0.00003, "height_fog": 0.0, "rain": 0.0,
 		"wind": 9.0, "exposure_bias": 0.0,
 	},
 	"zlota_mgielka": {
 		"name": "Złota mgiełka",
-		"coverage": 0.3, "type": 0.35, "density": 0.8, "bottom": 1.8, "thickness": 1.6,
+		"coverage": 0.4, "type": 0.45, "density": 0.8, "bottom": 1.6, "thickness": 2.0,
 		"cirrus": 0.65, "mie": 3.2, "fog": 0.0001, "height_fog": 0.0, "rain": 0.0,
 		"wind": 6.0, "exposure_bias": 0.1,
 	},
 	"cumulusy": {
 		"name": "Cumulusy",
-		"coverage": 0.48, "type": 0.62, "density": 1.0, "bottom": 1.3, "thickness": 2.6,
+		"coverage": 0.56, "type": 0.72, "density": 1.05, "bottom": 1.2, "thickness": 3.4,
 		"cirrus": 0.25, "mie": 1.4, "fog": 0.000035, "height_fog": 0.0, "rain": 0.0,
 		"wind": 12.0, "exposure_bias": 0.0,
 	},
 	"burzowy_zachod": {
 		"name": "Burzowy zachód",
-		"coverage": 0.58, "type": 1.0, "density": 1.25, "bottom": 1.2, "thickness": 5.5,
+		"coverage": 0.62, "type": 1.0, "density": 1.25, "bottom": 1.2, "thickness": 6.5,
 		"cirrus": 0.5, "mie": 2.4, "fog": 0.00008, "height_fog": 0.0, "rain": 0.0,
 		"wind": 15.0, "exposure_bias": 0.25,
 	},
