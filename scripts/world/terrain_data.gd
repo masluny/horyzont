@@ -7,7 +7,7 @@ extends Node
 signal generated
 
 const SIZE := 4096
-const ECO_SIZE := 2048
+const ECO_SIZE := 4096
 const WORLD := 10240.0
 const TEXEL := WORLD / SIZE
 const H_MIN := -200.0

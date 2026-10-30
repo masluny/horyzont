@@ -1,0 +1,4 @@
+[ {"time": 13.0, "weather": "cumulusy", "drive": 3, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_a.png", "frames": 10, "width": 1600},
+  {"time": 17.8, "weather": "pogodnie", "drive": 4, "road_near": [1139, -2364], "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_b.png", "frames": 10, "width": 1600},
+  {"time": 8.0, "weather": "zlota_mgielka", "drive": 4, "road_near": [3200, 1600], "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_c.png", "frames": 10, "width": 1600},
+  {"time": 19.3, "weather": "pogodnie", "drive": 4, "road_near": [-1000, 3000], "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_d.png", "frames": 10, "width": 1600} ]

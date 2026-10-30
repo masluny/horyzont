@@ -56,10 +56,10 @@ func build(data: TerrainData, extra: Array[Vector3]) -> void:
 
 func _make_materials() -> void:
 	var tints := {
-		"oak": [Vector3(0.74, 0.86, 0.52), Vector3(0.58, 0.74, 0.4)],
-		"round": [Vector3(0.68, 0.84, 0.46), Vector3(0.52, 0.7, 0.34)],
-		"olive": [Vector3(0.62, 0.68, 0.5), Vector3(0.5, 0.56, 0.42)],
-		"pine": [Vector3(0.78, 0.92, 0.66), Vector3(0.62, 0.78, 0.54)],
+		"oak": [Vector3(0.37, 0.47, 0.25), Vector3(0.28, 0.4, 0.19)],
+		"round": [Vector3(0.36, 0.48, 0.23), Vector3(0.26, 0.4, 0.17)],
+		"olive": [Vector3(0.42, 0.47, 0.36), Vector3(0.33, 0.38, 0.29)],
+		"pine": [Vector3(0.42, 0.52, 0.36), Vector3(0.32, 0.43, 0.29)],
 	}
 	_table_data.resize(TABLE_WIDTH * VARIANTS.size() * 3 * 4)
 	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * 3, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())

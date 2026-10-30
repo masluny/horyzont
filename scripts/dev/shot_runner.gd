@@ -28,8 +28,13 @@ func _render(shot: Dictionary) -> void:
 		# Let the car drive itself for a while, then shoot with the given camera mode.
 		var world = Game.world
 		world.set_cinema(true)
-		if shot.has("road_index"):
+		if shot.has("road_near"):
+			var at: Array = shot["road_near"]
+			world.car.place_on_road(world.terrain.nearest_road_index(Vector3(at[0], 0.0, at[1])))
+		elif shot.has("road_index"):
 			world.car.place_on_road(int(shot["road_index"]))
+		await get_tree().physics_frame
+		await get_tree().physics_frame
 		camera.set_process(true)
 		var mode_name: String = shot.get("mode", "chase")
 		var modes := {"chase": CameraRig.Mode.CHASE, "far": CameraRig.Mode.CHASE_FAR, "bonnet": CameraRig.Mode.BONNET, "cinema": CameraRig.Mode.CINEMATIC}

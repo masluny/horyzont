@@ -18,8 +18,8 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 a = texture(albedo_tex, UV);
-	if (leaf && a.a < 0.42) {
+	vec4 a = texture(albedo_tex, UV, -1.0);
+	if (leaf && a.a < 0.2) {
 		discard;
 	}
 	vec3 n = normalize(v_n);

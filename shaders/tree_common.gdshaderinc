@@ -47,15 +47,26 @@ float tree_place(int id, inout vec3 v, inout vec3 n, inout vec3 t, float flex, f
 	return tree_fade(length(inst.xz - cam.xz));
 }
 
+global uniform float frame_jitter;
+
 void tree_dither(vec2 frag, float fade) {
 	if (fade >= 0.999) {
 		return;
 	}
-	ivec2 p = ivec2(frag) % 4;
-	int b[16] = int[](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-	if (fade < (float(b[p.y * 4 + p.x]) + 0.5) / 16.0) {
+	// Interleaved gradient noise, shifted every frame so the upscaler resolves it.
+	vec2 q = frag + frame_jitter * vec2(5.588, 2.113);
+	float ign = fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715))));
+	if (fade < ign) {
 		discard;
 	}
+}
+
+// Mipped alpha shrinks thin leaves away; scale it back up with distance.
+float tree_alpha(float a, vec2 uv, float size) {
+	vec2 dx = dFdx(uv) * size;
+	vec2 dy = dFdy(uv) * size;
+	float mip = 0.5 * log2(max(max(dot(dx, dx), dot(dy, dy)), 1.0));
+	return a * (1.0 + mip * 0.3);
 }
 
 #endif

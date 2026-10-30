@@ -10,6 +10,8 @@ uniform float views = 8.0;
 uniform float fade_near = 215.0;
 uniform float fade_far = 240.0;
 
+global uniform float frame_jitter;
+
 varying float v_view;
 varying float v_row;
 varying float v_fade;
@@ -40,20 +42,19 @@ void vertex() {
 }
 
 void fragment() {
-	ivec2 p = ivec2(FRAGCOORD.xy) % 4;
-	int b[16] = int[](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-	float bayer = (float(b[p.y * 4 + p.x]) + 0.5) / 16.0;
-	if (v_fade < bayer) {
+	vec2 q = FRAGCOORD.xy + frame_jitter * vec2(5.588, 2.113);
+	float ign = fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715))));
+	if (v_fade < ign) {
 		discard;
 	}
-	float view = floor(v_view + bayer);
+	float view = floor(v_view + ign);
 	view = mod(view, views);
 	vec2 uv = (vec2(view, v_row) + UV) / vec2(views, rows);
 	vec4 a = texture(atlas_albedo, uv);
 	vec3 n = texture(atlas_normal, uv).xyz * 2.0 - 1.0;
 	vec3 wn = v_right * n.x + vec3(0.0, 1.0, 0.0) * n.y + v_back * n.z;
 	ALBEDO = a.rgb * mix(0.86, 1.1, v_hue);
-	ALPHA = a.a;
+	ALPHA = a.a * 1.5;
 	ALPHA_SCISSOR_THRESHOLD = 0.4;
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 	ROUGHNESS = 0.6;

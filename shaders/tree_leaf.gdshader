@@ -32,13 +32,13 @@ void fragment() {
 	vec4 a = texture(leaf_albedo, UV);
 	vec3 nm = texture(leaf_normal, UV).xyz * 2.0 - 1.0;
 	ALBEDO = a.rgb * v_col * mix(1.0, 0.72, wetness);
-	ALPHA = a.a;
+	ALPHA = tree_alpha(a.a, UV, 2048.0);
 	ALPHA_SCISSOR_THRESHOLD = 0.42;
 	NORMAL = normalize(v_n + (TANGENT * nm.x + BINORMAL * nm.y) * 0.55);
 	ROUGHNESS = mix(0.46, 0.25, wetness);
 	SPECULAR = 0.38;
-	AO = clamp(v_ao + 0.2, 0.0, 1.0);
-	AO_LIGHT_AFFECT = 0.45;
+	AO = clamp(v_ao + 0.35, 0.0, 1.0);
+	AO_LIGHT_AFFECT = 0.2;
 }
 
 void light() {

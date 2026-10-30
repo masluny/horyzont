@@ -95,7 +95,10 @@ func place_on_road(index: int, lane_offset := 1.9) -> void:
 	var t := terrain.road_tangent(index)
 	var right := t.cross(Vector3.UP).normalized()
 	var pos := p + right * lane_offset + Vector3.UP * 0.25
-	global_transform = Transform3D(Basis.looking_at(t, Vector3.UP), pos)
+	var xf := Transform3D(Basis.looking_at(t, Vector3.UP), pos)
+	global_transform = xf
+	if is_inside_tree():
+		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, xf)
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	_road_index = index

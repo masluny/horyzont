@@ -13,12 +13,12 @@ func build(data: TerrainData, sky: SkySystem) -> void:
 	material = ShaderMaterial.new()
 	material.shader = preload("res://shaders/road.gdshader")
 	var base := "res://assets/textures/asphalt_02/asphalt_02_"
-	material.set_shader_parameter("asphalt_albedo", load(base + "diffuse.jpg"))
-	material.set_shader_parameter("asphalt_normal", load(base + "nor_gl.jpg"))
-	material.set_shader_parameter("asphalt_arm", load(base + "arm.jpg"))
-	var gbase := "res://assets/textures/gravelly_sand/gravelly_sand_"
-	material.set_shader_parameter("gravel_albedo", load(gbase + "diffuse.jpg"))
-	material.set_shader_parameter("gravel_normal", load(gbase + "nor_gl.jpg"))
+	material.set_shader_parameter("asphalt_albedo", load(base + "diffuse_4k.jpg"))
+	material.set_shader_parameter("asphalt_normal", load(base + "nor_gl_4k.jpg"))
+	material.set_shader_parameter("asphalt_arm", load(base + "arm_4k.jpg"))
+	var gbase := "res://assets/textures/gravel_road/gravel_road_"
+	material.set_shader_parameter("gravel_albedo", load(gbase + "diffuse_4k.jpg"))
+	material.set_shader_parameter("gravel_normal", load(gbase + "nor_gl_4k.jpg"))
 	material.set_shader_parameter("half_width", TerrainData.ROAD_HALF_WIDTH)
 	sky.register_material(material)
 

@@ -55,7 +55,7 @@ void fragment() {
 	shrub *= 1.0 - smoothstep(0.05, 0.3, road);
 
 	float grass = smoothstep(0.7, 0.84, ny) * smoothstep(4.0, 7.0, h) * (1.0 - smoothstep(460.0, 620.0, h));
-	grass *= 1.0 - smoothstep(0.05, 0.42, road);
+	grass *= 1.0 - smoothstep(0.62, 0.96, road * 1.2 + (vnoise(p * 0.7) - 0.5) * 0.3);
 	grass *= smoothstep(0.1, 0.34, fbm(p / 36.0 + 5.0, 4) + 0.28 * ny);
 	grass *= 1.0 - forest * 0.5;
 

@@ -19,12 +19,13 @@ func setup(data: TerrainData, sky: SkySystem) -> void:
 	material.set_shader_parameter("heightmap", data.height_texture)
 	material.set_shader_parameter("normalmap", data.normal_texture)
 	material.set_shader_parameter("maskmap", data.mask_texture)
-	for set_name in ["grass:leafy_grass", "rock:rock_face_03", "sand:coast_sand_01", "gravel:gravelly_sand"]:
+	material.set_shader_parameter("eco_map", data.eco_texture)
+	for set_name in ["grass:sparse_grass", "forest:forest_floor", "rock:rock_face_03", "rock2:coast_land_rocks_01", "sand:coast_sand_01", "gravel:gravel_road"]:
 		var parts: PackedStringArray = set_name.split(":")
 		var base := "res://assets/textures/%s/%s_" % [parts[1], parts[1]]
-		material.set_shader_parameter(parts[0] + "_albedo", load(base + "diffuse.jpg"))
-		material.set_shader_parameter(parts[0] + "_normal", load(base + "nor_gl.jpg"))
-		material.set_shader_parameter(parts[0] + "_arm", load(base + "arm.jpg"))
+		material.set_shader_parameter(parts[0] + "_albedo", load(base + "diffuse_4k.jpg"))
+		material.set_shader_parameter(parts[0] + "_normal", load(base + "nor_gl_4k.jpg"))
+		material.set_shader_parameter(parts[0] + "_arm", load(base + "arm_4k.jpg"))
 	sky.register_material(material)
 	if Game.args.has("terrain_debug"):
 		material.set_shader_parameter("debug_mode", int(Game.arg("terrain_debug")))

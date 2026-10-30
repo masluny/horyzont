@@ -7,17 +7,17 @@ extends RefCounted
 
 const SPECIES := {
 	"oak": {"atlas": "oak", "bark": "bark_brown_02", "h": [10.0, 14.0], "bole": 0.26, "n1": [8, 11], "len1": 0.6,
-		"ang1": [0.8, 1.2], "n2": [4, 6], "len2": 0.55, "ang2": [0.6, 1.0], "n3": [3, 4], "len3": 0.6, "gnarl": 0.5,
-		"up": 0.1, "radius": 0.03, "card": [2.0, 3.0], "spacing": 0.8, "shape": "dome"},
+		"ang1": [0.8, 1.2], "n2": [4, 6], "len2": 0.55, "ang2": [0.6, 1.0], "n3": [4, 5], "len3": 0.62, "gnarl": 0.5,
+		"up": 0.1, "radius": 0.03, "card": [1.3, 1.95], "spacing": 0.34, "shape": "dome"},
 	"round": {"atlas": "round", "bark": "jolcham_oak_bark_01", "h": [13.0, 18.0], "bole": 0.22, "n1": [10, 13], "len1": 0.42,
-		"ang1": [0.5, 0.85], "n2": [4, 6], "len2": 0.6, "ang2": [0.5, 0.9], "n3": [3, 4], "len3": 0.6, "gnarl": 0.35,
-		"up": 0.2, "radius": 0.024, "card": [2.0, 3.0], "spacing": 0.8, "shape": "oval"},
+		"ang1": [0.5, 0.85], "n2": [4, 6], "len2": 0.6, "ang2": [0.5, 0.9], "n3": [4, 5], "len3": 0.62, "gnarl": 0.35,
+		"up": 0.2, "radius": 0.024, "card": [1.3, 1.95], "spacing": 0.34, "shape": "oval"},
 	"olive": {"atlas": "olive", "bark": "bark_brown_02", "h": [6.0, 8.5], "bole": 0.2, "n1": [6, 8], "len1": 0.62,
-		"ang1": [0.75, 1.15], "n2": [4, 6], "len2": 0.6, "ang2": [0.6, 1.0], "n3": [3, 4], "len3": 0.6, "gnarl": 0.85,
-		"up": 0.08, "radius": 0.042, "card": [1.5, 2.2], "spacing": 0.62, "shape": "dome"},
+		"ang1": [0.75, 1.15], "n2": [4, 6], "len2": 0.6, "ang2": [0.6, 1.0], "n3": [4, 5], "len3": 0.62, "gnarl": 0.85,
+		"up": 0.08, "radius": 0.042, "card": [1.05, 1.55], "spacing": 0.3, "shape": "dome"},
 	"pine": {"atlas": "pine", "bark": "pine_bark", "h": [16.0, 23.0], "bole": 0.6, "n1": [12, 16], "len1": 0.33,
 		"ang1": [1.05, 1.4], "n2": [4, 6], "len2": 0.6, "ang2": [0.5, 0.85], "n3": [0, 0], "len3": 0.0, "gnarl": 0.3,
-		"up": 0.2, "radius": 0.021, "card": [1.9, 2.8], "spacing": 0.72, "shape": "umbrella"},
+		"up": 0.2, "radius": 0.021, "card": [1.45, 2.1], "spacing": 0.34, "shape": "umbrella"},
 }
 const BARK_TILE := 1.5
 
@@ -62,6 +62,8 @@ func _make(species: String, seed_value: int) -> Dictionary:
 	var aabb_r := 0.0
 	for c in _cards:
 		aabb_r = maxf(aabb_r, Vector2(c["p"].x, c["p"].z).length())
+	if Game.args.has("tree_stats"):
+		print("tree %s: %d m, bark %d/%d v, leaves %d/%d v" % [species, int(_height), bark_a.verts.size(), bark_b.verts.size(), leaf_a.verts.size(), leaf_b.verts.size()])
 	return {
 		"lod0": _commit(bark_a, leaf_a),
 		"lod1": _commit(bark_b, leaf_b),
@@ -93,8 +95,9 @@ func _grow(start: Vector3, dir: Vector3, length: float, radius: float, level: in
 	var phase := _rng.randf() * TAU
 	var flex_end: float = flex0 + float([0.16, 0.34, 0.3, 0.2][level])
 	_tube(pts, rad, level, flex0, flex_end, phase)
+	if level >= _max_level - 1:
+		_cards.append({"p": pts[segs], "d": d, "flex": flex_end, "phase": phase, "len": length, "pts": pts, "tip": level == _max_level})
 	if level == _max_level:
-		_cards.append({"p": pts[segs], "d": d, "flex": flex_end, "phase": phase, "len": length, "pts": pts})
 		return
 	var key := "n%d" % (level + 1)
 	var n := _rng.randi_range(_p[key][0], _p[key][1])
@@ -189,22 +192,22 @@ func _place_cards() -> void:
 		var pts: Array = twig["pts"]
 		var total: float = twig["len"]
 		var count := maxi(int(total / spacing), 1)
+		var reach := 0.85 if twig["tip"] else 0.5
 		for i in count:
-			var u := 1.0 - float(i) / count * 0.85
+			var u := 1.0 - float(i) / count * reach
 			var f := u * (pts.size() - 1)
 			var idx := mini(int(f), pts.size() - 2)
 			var at: Vector3 = pts[idx].lerp(pts[idx + 1], f - idx)
 			var dir: Vector3 = (pts[idx + 1] - pts[idx]).normalized()
 			var size := _rng.randf_range(lo, hi)
 			_card(at, dir, size, twig["flex"], twig["phase"], 0)
-	# Every third card, larger, makes the far tree.
-	var kept := 0
+	# Fewer, larger cards make the far tree.
 	for twig in _cards:
 		var pts: Array = twig["pts"]
-		kept += 1
-		var at: Vector3 = pts[pts.size() - 1]
 		var dir: Vector3 = (pts[pts.size() - 1] - pts[0]).normalized()
-		_card(at, dir, _rng.randf_range(lo, hi) * 1.75, twig["flex"], twig["phase"], 1)
+		var size := _rng.randf_range(lo, hi) * 2.1
+		_card(pts[pts.size() - 1], dir, size, twig["flex"], twig["phase"], 1)
+		_card(pts[pts.size() / 2], dir, size * 0.8, twig["flex"], twig["phase"], 1)
 
 
 func _card(at: Vector3, dir: Vector3, size: float, flex: float, phase: float, lod: int) -> void:

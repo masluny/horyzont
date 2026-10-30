@@ -27,6 +27,7 @@ func run() -> void:
 	for id in SPECIES:
 		await _bake(id, SPECIES[id])
 		print("baked ", id)
+	await _bake_flat("seeds", "Foliage002")
 	get_tree().quit()
 
 
@@ -86,6 +87,31 @@ func _bake(id: String, cfg: Dictionary) -> void:
 		if pass_i == 0:
 			img.fix_alpha_edges()
 		img.save_png(OUT + id + ("_albedo.png" if pass_i == 0 else "_normal.png"))
+	vp.queue_free()
+
+
+## Copies one scan into a single RGBA atlas (colour + opacity).
+func _bake_flat(id: String, asset: String) -> void:
+	var base := "res://assets/foliage/src/%s/%s_2K-JPG_" % [asset, asset]
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/bake/foliage_flat.gdshader")
+	mat.set_shader_parameter("color_tex", load(base + "Color.jpg"))
+	mat.set_shader_parameter("opacity_tex", load(base + "Opacity.jpg"))
+	var vp := SubViewport.new()
+	vp.size = Vector2i(SIZE, SIZE)
+	vp.transparent_bg = true
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var rect := ColorRect.new()
+	rect.size = Vector2(SIZE, SIZE)
+	rect.material = mat
+	vp.add_child(rect)
+	add_child(vp)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var img := vp.get_texture().get_image()
+	img.convert(Image.FORMAT_RGBA8)
+	img.fix_alpha_edges()
+	img.save_png(OUT + id + "_albedo.png")
 	vp.queue_free()
 
 

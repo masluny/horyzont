@@ -51,13 +51,15 @@ void vertex() {
 
 	vec2 tuv = (root + WORLD_SIZE * 0.5) / WORLD_SIZE;
 	vec4 eco = textureLod(eco_map, tuv, 0.0);
+	eco.r = smoothstep(0.04, 0.3, eco.r);
 	float dens = blade_density(d);
 	float keep = smoothstep(0.0, 0.05, eco.r * dens - rank);
 	keep *= 1.0 - smoothstep(far_radius * 0.82, far_radius, d);
 
 	float patchy = textureLod(wind_noise, root * 0.0041, 0.0).r;
 	float r_h = COLOR.r;
-	float height = mix(0.2, 0.74, r_h * r_h) * (0.55 + 0.95 * patchy) * mix(0.75, 1.1, eco.r) * keep;
+	float tuft = textureLod(wind_noise, root * 0.027, 0.0).r;
+	float height = mix(0.16, 0.78, r_h * r_h) * (0.32 + 1.3 * patchy * patchy + 0.55 * tuft) * mix(0.75, 1.1, eco.r) * keep;
 	float widen = sqrt(1.0 / max(dens, 0.05));
 	float width = mix(0.009, 0.017, COLOR.g) * widen * keep;
 
@@ -88,10 +90,10 @@ void vertex() {
 
 	tip = t;
 	side_u = side;
-	float dry = clamp(eco.a * 0.95 + (COLOR.g - 0.5) * 0.3 + (patchy - 0.5) * 0.5, 0.0, 1.0);
-	vec3 lush = mix(vec3(0.035, 0.115, 0.018), vec3(0.06, 0.145, 0.024), COLOR.b);
-	vec3 straw = mix(vec3(0.115, 0.135, 0.04), vec3(0.24, 0.205, 0.085), COLOR.a);
-	base_col = mix(lush, straw, dry * dry) * mix(0.78, 1.18, COLOR.r);
+	float dry = clamp(eco.a * 0.95 + (COLOR.g - 0.5) * 0.42 + (patchy - 0.5) * 0.6 + (tuft - 0.5) * 0.5, 0.0, 1.0);
+	vec3 lush = mix(vec3(0.03, 0.095, 0.02), vec3(0.058, 0.125, 0.024), COLOR.b);
+	vec3 straw = mix(vec3(0.115, 0.125, 0.04), vec3(0.25, 0.205, 0.09), COLOR.a);
+	base_col = mix(lush, straw, dry * dry * 0.85) * mix(0.72, 1.2, COLOR.r);
 }
 
 void fragment() {
@@ -111,7 +113,7 @@ void light() {
 	float wrap = clamp((ndl + 0.4) / 1.4, 0.0, 1.0);
 	// Light through the blade when looking towards the sun.
 	float through = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 2.6) * smoothstep(0.1, 0.7, tip);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (wrap + through * vec3(1.5, 1.7, 0.55)) / PI;
+	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (wrap + through * vec3(1.0, 1.25, 0.5)) / PI;
 	vec3 hv = normalize(VIEW + LIGHT);
 	float ndh = clamp(dot(NORMAL, hv), 0.0, 1.0);
 	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * pow(ndh, 24.0) * 0.1 * (1.0 - ROUGHNESS);
