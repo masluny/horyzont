@@ -3,6 +3,7 @@
 # Prints shader/script errors from the log.
 cd "$(dirname "$0")/.."
 LIMIT=$1; shift
+mkdir -p dev/out
 LOG=dev/out/log.txt
 godot --path . "$@" > "$LOG" 2>&1 &
 PID=$!

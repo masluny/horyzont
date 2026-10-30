@@ -309,6 +309,9 @@ func set_cinema(on: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Keys pressed while the world is still loading.
+	if car == null:
+		return
 	if ui and not _playing() and not photo_mode:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
