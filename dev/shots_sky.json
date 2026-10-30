@@ -1,0 +1,8 @@
+[
+ {"time": 12.0, "weather": "cumulusy", "cam": [0,3,0], "look": [-80,30,-60], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_noon.png"},
+ {"time": 19.3, "weather": "pogodnie", "cam": [0,3,0], "look": [-79,10,-62], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_golden.png"},
+ {"time": 20.0, "weather": "zlota_mgielka", "cam": [0,3,0], "look": [-79,8,-62], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_sunset.png"},
+ {"time": 20.5, "weather": "pogodnie", "cam": [0,3,0], "look": [-79,10,-62], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_dusk.png"},
+ {"time": 20.4, "weather": "pogodnie", "cam": [0,3,0], "look": [79,10,62], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_dusk_east.png"},
+ {"time": 23.5, "weather": "pogodnie", "cam": [0,3,0], "look": [-20,40,-50], "out": "/Users/macbookkacper/dev/horyzont/dev/out/s_night.png"}
+]
