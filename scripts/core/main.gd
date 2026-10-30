@@ -51,6 +51,8 @@ func _ready() -> void:
 	camera.make_current()
 
 
+	if Game.args.has("drive_test"):
+		add_child(load("res://dev/drive_test.gd").new())
 	if Game.args.has("stats"):
 		add_child(load("res://dev/terrain_stats.gd").new())
 	terrain = TerrainData.new()
@@ -96,6 +98,7 @@ func _ready() -> void:
 		ui.drive_requested.connect(_start_drive)
 		ui.cinema_requested.connect(func(): set_cinema(true); _release_mouse())
 		ui.main_menu_requested.connect(_to_menu)
+		ui.photo_overlay.closed.connect(func(): if photo_mode: toggle_photo_mode())
 		postcards = Postcards.new()
 		postcards.name = "Postcards"
 		add_child(postcards)
@@ -286,6 +289,8 @@ func _process(delta: float) -> void:
 		var fast := Input.is_physical_key_pressed(KEY_T)
 		var base: float = Settings.time_scale if ui else 12.0
 		clock.time_scale = lerpf(clock.time_scale, 360.0 if fast else base, 1.0 - exp(-delta * 4.0))
+	if ui:
+		camera.mouse_sensitivity = Settings.mouse_sensitivity
 
 
 func _build_terrain_collision() -> void:

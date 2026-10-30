@@ -128,7 +128,7 @@ func _physics_process(delta: float) -> void:
 	is_reversing = forward_speed < -0.5 and gear == -1
 
 	# Speed-sensitive steering.
-	var steer_limit := MAX_STEER * lerpf(1.0, 0.28, clampf(speed_kmh / 160.0, 0.0, 1.0))
+	var steer_limit := MAX_STEER * lerpf(1.0, 0.16, pow(clampf(speed_kmh / 150.0, 0.0, 1.0), 0.8))
 	_steer_smooth = move_toward(_steer_smooth, steer * steer_limit, delta * 2.2)
 
 	# Engine and gearbox.
@@ -140,6 +140,8 @@ func _physics_process(delta: float) -> void:
 	engine_rpm = clampf(wheel_rpm * ratio, IDLE_RPM, MAX_RPM)
 	rpm = lerpf(rpm, engine_rpm + throttle * 250.0 * (1.0 if speed_kmh < 8.0 else 0.0), 1.0 - exp(-delta * 12.0))
 	var torque := _torque_curve(engine_rpm) * throttle
+	if gear == -1 and speed_kmh > 22.0:
+		torque = 0.0
 	if engine_rpm >= MAX_RPM - 50.0:
 		torque = 0.0
 	if _shift_timer > 0.0:
@@ -226,9 +228,14 @@ func _physics_process(delta: float) -> void:
 	apply_central_force(drag - up * v.length_squared() * 0.9)
 	var grounded := _wheel_contact.count(true)
 	if grounded >= 2:
+		# Stability assist: steer the yaw rate toward what the tyres can deliver.
 		var yaw_rate := angular_velocity.dot(up)
-		var desired := -forward_speed * tan(_steer_smooth) / 2.6
-		apply_torque(up * (desired - yaw_rate) * 2200.0 * clampf(speed_kmh / 40.0, 0.0, 1.0))
+		var max_yaw := 8.5 / maxf(absf(forward_speed), 3.0)
+		var desired := clampf(-forward_speed * tan(_steer_smooth) / 2.6, -max_yaw, max_yaw)
+		apply_torque(up * (desired - yaw_rate) * 2600.0 * clampf(speed_kmh / 40.0, 0.0, 1.0))
+		# Kill sideways drift that the tyres alone would let build up.
+		var lat := linear_velocity.dot(xf.basis.x)
+		apply_central_force(-xf.basis.x * lat * 220.0 * clampf(speed_kmh / 30.0, 0.0, 1.0))
 	else:
 		# Keep the car upright-ish in the air.
 		var tilt := up.cross(Vector3.UP)
