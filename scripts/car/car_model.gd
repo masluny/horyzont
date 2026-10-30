@@ -37,6 +37,7 @@ var trim := StandardMaterial3D.new()
 var tyre := StandardMaterial3D.new()
 var rim := StandardMaterial3D.new()
 var chrome := StandardMaterial3D.new()
+var brake := StandardMaterial3D.new()
 var head_mat := StandardMaterial3D.new()
 var lamp_glass := StandardMaterial3D.new()
 var tail_mat := StandardMaterial3D.new()
@@ -104,18 +105,22 @@ func _setup_materials(c: Color) -> void:
 	glass.roughness = 0.05
 	glass.metallic_specular = 0.8
 	dark.albedo_color = Color(0.008, 0.008, 0.009)
-	dark.roughness = 0.7
+	dark.roughness = 0.9
 	dark.metallic_specular = 0.2
 	trim.albedo_color = Color(0.018, 0.018, 0.02)
 	trim.roughness = 0.34
-	tyre.albedo_color = Color(0.022, 0.022, 0.023)
-	tyre.roughness = 0.82
+	tyre.albedo_color = Color(0.012, 0.012, 0.013)
+	tyre.roughness = 0.92
+	tyre.metallic_specular = 0.2
 	rim.albedo_color = Color(0.36, 0.37, 0.39)
 	rim.metallic = 1.0
 	rim.roughness = 0.3
 	chrome.albedo_color = Color(0.72, 0.72, 0.74)
 	chrome.metallic = 1.0
 	chrome.roughness = 0.16
+	brake.albedo_color = Color(0.2, 0.2, 0.21)
+	brake.metallic = 1.0
+	brake.roughness = 0.7
 	head_mat.albedo_color = Color(0.9, 0.92, 0.95)
 	head_mat.emission_enabled = true
 	head_mat.emission = Color(1.0, 0.95, 0.85)
@@ -342,6 +347,17 @@ func _cabin_surface(k: int, z: float, glass_st: SurfaceTool, paint_st: SurfaceTo
 	return glass_st if z < 1.22 else paint_st
 
 
+## The body narrows towards the nose and up to the shoulder; the liner stays inside it.
+static func _liner_edge(z: float, up: float) -> float:
+	var half_width: float = BODY[0][1]
+	for i in BODY.size() - 1:
+		var a: Array = BODY[i]
+		var b: Array = BODY[i + 1]
+		if z >= a[0] and z <= b[0]:
+			half_width = lerpf(a[1], b[1], (z - a[0]) / (b[0] - a[0]))
+	return half_width - 0.03 - 0.05 * up * up
+
+
 func _add_arch_liners(root: Node3D) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -349,7 +365,6 @@ func _add_arch_liners(root: Node3D) -> void:
 	for wz in WHEEL_Z:
 		for side: float in [-1.0, 1.0]:
 			var inner := 0.56 * side
-			var outer := 0.93 * side
 			var centre := Vector3(inner, ARCH_Y, wz)
 			for s in segs:
 				var a0 := PI * s / segs
@@ -358,8 +373,8 @@ func _add_arch_liners(root: Node3D) -> void:
 				var o1 := Vector3(0.0, sin(a1), cos(a1)) * ARCH_RADIUS
 				var p00 := Vector3(inner, ARCH_Y, wz) + o0
 				var p01 := Vector3(inner, ARCH_Y, wz) + o1
-				var p10 := Vector3(outer, ARCH_Y, wz) + o0
-				var p11 := Vector3(outer, ARCH_Y, wz) + o1
+				var p10 := Vector3(_liner_edge(wz + o0.z, sin(a0)) * side, ARCH_Y, wz) + o0
+				var p11 := Vector3(_liner_edge(wz + o1.z, sin(a1)) * side, ARCH_Y, wz) + o1
 				var axis := Vector3(inner, ARCH_Y + 3.0, wz)
 				_tri(st, p00, p10, p01, axis)
 				_tri(st, p10, p11, p01, axis)
@@ -538,26 +553,33 @@ func _add_trim(root: Node3D) -> void:
 		ci.rotation.x = PI * 0.5
 		ci.position = Vector3(0.56 * side, 0.4, 2.265)
 		root.add_child(ci)
-		# Door mirror: painted shell on a short black stalk, dark glass behind.
+		# Door mirror: painted shell, glass closing its back, on a stalk from the door.
 		var shell := SphereMesh.new()
-		shell.radius = 0.085
+		shell.radius = 0.1
 		shell.height = 0.1
-		shell.radial_segments = 16
+		shell.is_hemisphere = true
+		shell.radial_segments = 20
 		shell.rings = 8
 		var si := _mesh(shell, paint)
-		si.scale = Vector3(1.25, 0.72, 0.8)
-		si.position = Vector3(1.01 * side, 0.965, -0.4)
+		si.rotation.x = -PI * 0.5
+		si.scale = Vector3(1.08, 0.75, 0.6)
+		si.position = Vector3(0.985 * side, 0.93, -0.38)
 		root.add_child(si)
-		var mirror := BoxMesh.new()
-		mirror.size = Vector3(0.165, 0.08, 0.004)
+		var mirror := CylinderMesh.new()
+		mirror.top_radius = 0.1
+		mirror.bottom_radius = 0.1
+		mirror.height = 0.006
+		mirror.radial_segments = 20
 		var mi := _mesh(mirror, chrome)
-		mi.position = Vector3(1.01 * side, 0.965, -0.335)
+		mi.rotation.x = PI * 0.5
+		mi.scale = Vector3(1.04, 1.0, 0.57)
+		mi.position = Vector3(0.985 * side, 0.93, -0.378)
 		root.add_child(mi)
 		var stalk := BoxMesh.new()
-		stalk.size = Vector3(0.16, 0.022, 0.05)
+		stalk.size = Vector3(0.22, 0.024, 0.05)
 		var sti := _mesh(stalk, trim)
-		sti.position = Vector3(0.91 * side, 0.93, -0.4)
-		sti.rotation.z = -0.25 * side
+		sti.position = Vector3(0.86 * side, 0.8625, -0.39)
+		sti.rotation.z = 0.607 * side
 		root.add_child(sti)
 		# Door handle.
 		var handle := BoxMesh.new()
@@ -594,12 +616,16 @@ static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, inside: Ve
 # --- wheels ------------------------------------------------------------------------
 
 ## Spins a profile of (radius, x) points round the X axis.
-static func _lathe(profile: Array[Vector2], segs: int) -> ArrayMesh:
+## Turns a profile of (radius, x) points around the x axis. The outside of the solid
+## is on the left when walking the profile with side 1, as in a tyre section from one
+## bead over the tread to the other. A mirrored profile passes side -1.
+static func _lathe(profile: Array[Vector2], segs: int, side := 1.0) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for s in segs:
 		var a0 := TAU * s / segs
 		var a1 := TAU * (s + 1) / segs
+		var mid := (a0 + a1) * 0.5
 		for i in profile.size() - 1:
 			var p := profile[i]
 			var q := profile[i + 1]
@@ -607,7 +633,9 @@ static func _lathe(profile: Array[Vector2], segs: int) -> ArrayMesh:
 			var v01 := Vector3(p.y, cos(a1) * p.x, sin(a1) * p.x)
 			var v10 := Vector3(q.y, cos(a0) * q.x, sin(a0) * q.x)
 			var v11 := Vector3(q.y, cos(a1) * q.x, sin(a1) * q.x)
-			var inside := Vector3((p.y + q.y) * 0.5, 0.0, 0.0)
+			var d := q - p
+			var out := Vector3(-d.x, cos(mid) * d.y, sin(mid) * d.y) * side
+			var inside := (v00 + v11) * 0.5 - out
 			_tri(st, v00, v10, v01, inside)
 			_tri(st, v10, v11, v01, inside)
 	st.generate_normals()
@@ -618,21 +646,30 @@ static func _lathe(profile: Array[Vector2], segs: int) -> ArrayMesh:
 func _make_wheel(left: bool) -> Node3D:
 	var w := Node3D.new()
 	var f := -1.0 if left else 1.0
-	var tyre_profile: Array[Vector2] = [Vector2(0.24, -0.118), Vector2(0.285, -0.122), Vector2(0.325, -0.112), Vector2(0.339, -0.09),
-		Vector2(0.34, 0.0), Vector2(0.339, 0.09), Vector2(0.325, 0.112), Vector2(0.285, 0.122), Vector2(0.24, 0.118)]
-	w.add_child(_mesh(_lathe(tyre_profile, 44), tyre))
-	var lip: Array[Vector2] = [Vector2(0.243, 0.112 * f), Vector2(0.236, 0.118 * f), Vector2(0.226, 0.112 * f), Vector2(0.222, 0.075 * f), Vector2(0.222, -0.06 * f)]
-	w.add_child(_mesh(_lathe(lip, 36), rim))
-	var barrel: Array[Vector2] = [Vector2(0.224, -0.1 * f), Vector2(0.224, 0.075 * f)]
-	w.add_child(_mesh(_lathe(barrel, 28), dark))
+	# Half a tyre section from the bead to the middle of the tread, with two grooves.
+	var half: Array[Vector2] = [Vector2(0.243, 0.113), Vector2(0.256, 0.119), Vector2(0.278, 0.125), Vector2(0.302, 0.125),
+		Vector2(0.325, 0.118), Vector2(0.336, 0.107), Vector2(0.34, 0.094), Vector2(0.34, 0.086), Vector2(0.33, 0.084),
+		Vector2(0.33, 0.074), Vector2(0.34, 0.072), Vector2(0.34, 0.036), Vector2(0.33, 0.034), Vector2(0.33, 0.024),
+		Vector2(0.34, 0.022), Vector2(0.34, 0.0)]
+	var tyre_profile: Array[Vector2] = []
+	for p in half:
+		tyre_profile.append(Vector2(p.x, -p.y))
+	for i in range(half.size() - 2, -1, -1):
+		tyre_profile.append(half[i])
+	w.add_child(_mesh(_lathe(tyre_profile, 64), tyre))
+	var lip: Array[Vector2] = [Vector2(0.246, 0.112 * f), Vector2(0.24, 0.122 * f), Vector2(0.229, 0.119 * f), Vector2(0.223, 0.098 * f), Vector2(0.218, 0.06 * f)]
+	w.add_child(_mesh(_lathe(lip, 48, f), rim))
+	# The barrel closes behind the spokes, so nothing shows through the wheel.
+	var barrel: Array[Vector2] = [Vector2(0.218, 0.06 * f), Vector2(0.218, 0.03 * f), Vector2(0.05, 0.03 * f)]
+	w.add_child(_mesh(_lathe(barrel, 32, f), dark))
 	var disc := CylinderMesh.new()
-	disc.top_radius = 0.17
-	disc.bottom_radius = 0.17
-	disc.height = 0.02
-	disc.radial_segments = 28
-	var di := _mesh(disc, chrome)
+	disc.top_radius = 0.175
+	disc.bottom_radius = 0.175
+	disc.height = 0.012
+	disc.radial_segments = 32
+	var di := _mesh(disc, brake)
 	di.rotation.z = PI * 0.5
-	di.position.x = 0.02 * f
+	di.position.x = 0.048 * f
 	w.add_child(di)
 	var hub := CylinderMesh.new()
 	hub.top_radius = 0.055
@@ -650,13 +687,13 @@ func _make_wheel(left: bool) -> Node3D:
 		var a := TAU * k / n
 		var pair := -1.0 if k % 2 == 0 else 1.0
 		var tip_a := a + pair * 0.07
-		var root_p := Vector3(0.095 * f, cos(a) * 0.05, sin(a) * 0.05)
-		var tip_p := Vector3(0.1 * f, cos(tip_a) * 0.226, sin(tip_a) * 0.226)
+		var root_p := Vector3(0.09 * f, cos(a) * 0.05, sin(a) * 0.05)
+		var tip_p := Vector3(0.106 * f, cos(tip_a) * 0.224, sin(tip_a) * 0.224)
 		var along := (tip_p - root_p).normalized()
 		var across := Vector3(0.0, -sin(a), cos(a))
-		var depth := Vector3(1.0, 0.0, 0.0) * 0.012
-		var wr := across * 0.019
-		var wt := across * 0.013
+		var depth := Vector3(1.0, 0.0, 0.0) * 0.016
+		var wr := across * 0.026
+		var wt := across * 0.017
 		var pts := [root_p - wr, root_p + wr, tip_p + wt, tip_p - wt]
 		var centre := (root_p + tip_p) * 0.5 + Vector3(-0.02 * f, 0.0, 0.0)
 		for s: float in [1.0, -1.0]:

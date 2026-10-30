@@ -14,7 +14,10 @@ dev/run.sh 90 --windowed --resolution 1280x800 -- --shots=res://dev/shots_sky.js
 
 Argumenty gry (po `--`): `--time=19.5`, `--weather=pogodnie`, `--cam=x,y,z`,
 `--look=x,y,z`, `--shots=<json>` (renderuje listę ujęć do PNG i wychodzi),
-`--dump_noise`, `--no_dome`, `--debug_sky`.
+`--dump_noise`, `--no_dome`, `--debug_sky`, `--quality=ultra`, `--scale=1.0`.
+
+Ujęcia do `docs/shots`: `dev/run.sh 400 --windowed --resolution 2940x1846 -- --shots=res://dev/shots_static.json --quality=ultra --scale=1.0`.
+Ujęcie z polem `park` zatrzymuje auto na drodze, a `car_cam` ustawia kamerę względem auta. Wynik trafia do `dev/out/static`, a do repo idzie JPG.
 
 ## Architektura
 
@@ -108,6 +111,8 @@ Pomiary mają sens tylko gdy nic innego nie używa GPU: przed ławką `pgrep -x 
 - MultiMesh bez ustawionych transformacji ma macierze zerowe: nawet przy własnych pozycjach trzeba wpisać Identity.
 - Przy interpolacji mapy ekosystemu liczy się rozdzielczość: 5 m/texel wynosiło trawę na asfalt, stąd 2,5 m i próg w shaderze.
 - Dwie warstwy przenikania LOD muszą używać przeciwnych końców tego samego szumu, inaczej zostają dziury.
+- `_lathe` bierze stronę zewnętrzną z kierunku profilu. Liczenie jej od osi koła odwracało boki opony, bo ich normalna jest równoległa do osi.
+- Tył felgi leży tuż za ramionami (x = 0,03), inaczej przez koło widać lakier z głębi nadkola.
 - Kadr impostora bierz z wierzchołków, nie z nominalnej wysokości: korona wystaje ponad `_height` i traciła czubek. Górne 3,5% komórki shader odrzuca, bo mipy wchodzą tam w pień z rzędu wyżej.
 
 ## Stan / następne kroki (30.10, wieczór)

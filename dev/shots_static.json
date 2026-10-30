@@ -1,0 +1,207 @@
+[
+{
+"time": 19.1,
+"weather": "zlota_mgielka",
+"frames": 240,
+"width": 2940,
+"park": [
+-3200,
+600
+],
+"car_cam": [
+-6.2,
+1.05,
+2.2
+],
+"car_look": [
+0,
+0.55,
+0.1
+],
+"fov": 32,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/01_golden_bok.png"
+},
+{
+"time": 19.1,
+"weather": "zlota_mgielka",
+"frames": 240,
+"width": 2940,
+"park": [
+-3200,
+600
+],
+"car_cam": [
+1.6,
+1.0,
+7.5
+],
+"car_look": [
+0,
+0.7,
+-1
+],
+"fov": 38,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/02_golden_tyl.png"
+},
+{
+"time": 19.25,
+"weather": "zlota_mgielka",
+"frames": 240,
+"width": 2940,
+"park": [
+-3200,
+600
+],
+"car_cam": [
+3.6,
+0.7,
+6.2
+],
+"car_look": [
+-0.4,
+0.6,
+-0.5
+],
+"fov": 34,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/03_golden_pod_slonce.png"
+},
+{
+"time": 19.1,
+"weather": "zlota_mgielka",
+"frames": 240,
+"width": 2940,
+"park": [
+-3200,
+600
+],
+"car_cam": [
+-2.9,
+0.55,
+-1.9
+],
+"car_look": [
+-0.85,
+0.34,
+-1.32
+],
+"fov": 30,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/04_golden_kolo.png"
+},
+{
+"time": 18.7,
+"weather": "pogodnie",
+"frames": 240,
+"width": 2940,
+"park": [
+3200,
+1600
+],
+"car_cam": [
+2.5,
+1.1,
+6.0
+],
+"car_look": [
+0,
+0.7,
+-2
+],
+"fov": 42,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/05_golden_las.png"
+},
+{
+"time": 19.55,
+"weather": "cumulusy",
+"frames": 240,
+"width": 2940,
+"cam": [
+-3400,
+30,
+560
+],
+"look": [
+-4400,
+200,
+-500
+],
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/06_golden_morze.png"
+},
+{
+"time": 18.9,
+"weather": "pogodnie",
+"frames": 240,
+"width": 2940,
+"cam": [
+-3560,
+12,
+-1300
+],
+"look": [
+-3400,
+40,
+-1000
+],
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/07_golden_klify.png"
+},
+{
+"time": 19.0,
+"weather": "cumulusy",
+"frames": 240,
+"width": 2940,
+"cam": [
+2600,
+520,
+-2400
+],
+"look": [
+800,
+320,
+-1000
+],
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/08_golden_wyspa.png"
+},
+{
+"time": 5.6,
+"weather": "poranna_mgla",
+"frames": 240,
+"width": 2940,
+"park": [
+-1000,
+3000
+],
+"car_cam": [
+-4.5,
+1.0,
+5.5
+],
+"car_look": [
+0,
+0.6,
+0
+],
+"fov": 38,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/09_poranna_mgla.png"
+},
+{
+"time": 19.6,
+"weather": "burzowy_zachod",
+"frames": 240,
+"width": 2940,
+"park": [
+1139,
+-2364
+],
+"car_cam": [
+-4.5,
+1.1,
+6.0
+],
+"car_look": [
+0,
+0.8,
+0
+],
+"fov": 44,
+"out": "/Users/macbookkacper/dev/horyzont/dev/out/static/10_burza.png"
+}
+]

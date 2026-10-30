@@ -4,6 +4,8 @@ extends Node
 ## from the command line:  godot --path . -- --shots=res://dev/shots.json
 ## Each shot: {"time": 19.5, "weather": "pogodnie", "cam": [x,y,z],
 ##             "look": [x,y,z], "fov": 60, "out": "/abs/path.png", "frames": 40}
+## "park": [x,z] stops the car on the road there, then "car_cam" and "car_look"
+## place the camera relative to the car.
 
 var camera: CameraRig
 
@@ -14,6 +16,8 @@ func run(path: String) -> void:
 	if not Game.sky.is_baked:
 		await Game.sky.baked
 	Game.world.apply_quality(Game.arg("quality", "wysoka"))
+	if Game.args.has("scale"):
+		get_viewport().scaling_3d_scale = float(Game.arg("scale"))
 	for shot in shots:
 		await _render(shot)
 	get_tree().quit()
@@ -25,7 +29,9 @@ func _render(shot: Dictionary) -> void:
 	if shot.has("time"):
 		Game.clock.time = float(shot["time"])
 	Game.clock.paused = true
-	if shot.has("drive"):
+	if shot.has("park"):
+		await _park(shot)
+	elif shot.has("drive"):
 		# Let the car drive itself for a while, then shoot with the given camera mode.
 		var world = Game.world
 		world.set_cinema(true)
@@ -73,6 +79,25 @@ func _render(shot: Dictionary) -> void:
 		img.resize(w, int(img.get_height() * float(w) / img.get_width()), Image.INTERPOLATE_LANCZOS)
 	img.save_png(shot["out"])
 	print("shot saved ", shot["out"])
+
+
+func _park(shot: Dictionary) -> void:
+	var world = Game.world
+	var at: Array = shot["park"]
+	world.car.autopilot = false
+	world.car.place_on_road(world.terrain.nearest_road_index(Vector3(at[0], 0.0, at[1])), float(shot.get("lane", 1.9)))
+	world.car.freeze = false
+	# The suspension settles before the car is frozen in place.
+	for i in 90:
+		await get_tree().physics_frame
+	world.car.freeze = true
+	camera.set_process(false)
+	var xf: Transform3D = world.car.global_transform
+	var c: Array = shot["car_cam"]
+	var l: Array = shot.get("car_look", [0.0, 0.6, 0.0])
+	camera.global_position = xf * Vector3(c[0], c[1], c[2])
+	camera.look_at(xf * Vector3(l[0], l[1], l[2]))
+	camera.fov = float(shot.get("fov", 40.0))
 
 
 func _process(_delta: float) -> void:
