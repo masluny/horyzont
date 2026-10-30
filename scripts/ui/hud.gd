@@ -17,6 +17,8 @@ var _toast: PanelContainer
 var _toast_label: Label
 var _toast_tween: Tween
 var _dim_tween: Tween
+var _hint: Label
+var _hint_tween: Tween
 var _speed_box: VBoxContainer
 var _clock_box: VBoxContainer
 
@@ -28,6 +30,8 @@ var _rising := false
 var _idle := 0.0
 var _dimmed := false
 var _scale := 1.0
+var _hint_age := 0.0
+var _hint_alive := false
 
 
 func _init() -> void:
@@ -88,6 +92,11 @@ func _ready() -> void:
 	_toast.add_child(_toast_label)
 	add_child(_toast)
 
+	_hint = _make_label("F1 — sterowanie")
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.visible = false
+	add_child(_hint)
+
 
 func apply_scale(scale: float) -> void:
 	_scale = scale
@@ -97,6 +106,7 @@ func apply_scale(scale: float) -> void:
 	_pin(_objective, 0.0, 0.0, Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END, margin)
 	_pin(_fps, 1.0, 0.0, Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END, margin)
 	_pin_top_center(_toast, margin)
+	_pin_bottom_center(_hint, margin)
 
 	_speed.add_theme_font_size_override("font_size", int(round(80.0 * scale)))
 	_speed.add_theme_constant_override("shadow_outline_size", int(round(10.0 * scale)))
@@ -115,6 +125,9 @@ func apply_scale(scale: float) -> void:
 	_fps.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
 	_toast_label.add_theme_font_size_override("font_size", int(round(16.0 * scale)))
 	_toast.add_theme_stylebox_override("panel", UIStyle.panel_style(scale, 18.0, 10.0))
+	_hint.add_theme_font_size_override("font_size", int(round(14.0 * scale)))
+	_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.48))
+	_hint.add_theme_constant_override("shadow_outline_size", maxi(int(round(2.0 * scale)), 1))
 	_objective.add_theme_constant_override("separation", int(round(12.0 * scale)))
 	_speed_box.add_theme_constant_override("separation", int(round(2.0 * scale)))
 	_arrow.set_box(22.0 * scale)
@@ -152,6 +165,16 @@ func wake() -> void:
 	_set_dim(false)
 
 
+## Bottom hint for the opening seconds of a drive.
+func start_hint() -> void:
+	_hint_age = 0.0
+	_hint_alive = true
+	_hint.visible = true
+	_hint.modulate.a = 1.0
+	if _hint_tween != null and _hint_tween.is_valid():
+		_hint_tween.kill()
+
+
 func fade_in() -> void:
 	_dimmed = false
 	_idle = 0.0
@@ -186,6 +209,7 @@ func _process(delta: float) -> void:
 	_idle += delta
 	if _idle >= 6.0:
 		_set_dim(true)
+	_tick_hint(delta)
 
 
 func _refresh_car() -> void:
@@ -257,6 +281,18 @@ func _refresh_objective() -> void:
 	_arrow.rotation = -angle
 
 
+func _tick_hint(delta: float) -> void:
+	if not _hint_alive:
+		return
+	_hint_age += delta
+	if _hint_age < 15.0:
+		return
+	_hint_alive = false
+	_hint_tween = UIStyle.tween(self)
+	_hint_tween.tween_property(_hint, "modulate:a", 0.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_hint_tween.finished.connect(func() -> void: _hint.visible = false, CONNECT_ONE_SHOT)
+
+
 func _set_dim(dimmed: bool) -> void:
 	if dimmed == _dimmed:
 		return
@@ -313,6 +349,19 @@ func _pin_top_center(node: Control, margin: float) -> void:
 	node.offset_bottom = margin
 	node.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	node.grow_vertical = Control.GROW_DIRECTION_END
+
+
+func _pin_bottom_center(node: Control, margin: float) -> void:
+	node.anchor_left = 0.5
+	node.anchor_right = 0.5
+	node.anchor_top = 1.0
+	node.anchor_bottom = 1.0
+	node.offset_left = 0.0
+	node.offset_right = 0.0
+	node.offset_top = -margin
+	node.offset_bottom = -margin
+	node.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	node.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 
 class Arrow extends Control:

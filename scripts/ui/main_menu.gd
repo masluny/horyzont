@@ -109,8 +109,8 @@ func apply_scale(scale: float) -> void:
 		b.custom_minimum_size.y = 36.0 * scale
 
 
-func fade_in() -> void:
-	UIStyle.fade_in(self, 0.4)
+func fade_in(duration: float = 0.4) -> void:
+	UIStyle.fade_in(self, duration)
 
 
 func _button(text: String) -> Button:

@@ -16,6 +16,7 @@ static var mouse_sensitivity := 1.0
 static var show_fps := false
 static var time_scale := 12.0
 static var auto_weather := true
+static var help_seen := false
 
 
 @warning_ignore("shadowed_global_identifier")
@@ -34,6 +35,7 @@ static func load() -> void:
 	show_fps = bool(cfg.get_value("game", "show_fps", show_fps))
 	time_scale = clampf(float(cfg.get_value("game", "time_scale", time_scale)), 1.0, 240.0)
 	auto_weather = bool(cfg.get_value("game", "auto_weather", auto_weather))
+	help_seen = bool(cfg.get_value("game", "help_seen", help_seen))
 
 
 static func save() -> void:
@@ -48,6 +50,7 @@ static func save() -> void:
 	cfg.set_value("game", "show_fps", show_fps)
 	cfg.set_value("game", "time_scale", time_scale)
 	cfg.set_value("game", "auto_weather", auto_weather)
+	cfg.set_value("game", "help_seen", help_seen)
 	cfg.save(PATH)
 
 
