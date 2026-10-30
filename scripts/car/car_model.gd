@@ -69,14 +69,14 @@ func update_wheels(compress: Array, spin: Array, steer: float, rest: float, _rad
 
 
 func set_brake_lights(on: bool) -> void:
-	tail_mat.emission_energy_multiplier = 9.0 if on else (2.2 if headlights[0].visible else 0.4)
-	tail_light.light_energy = (0.25 if on else 0.06) if headlights[0].visible or on else 0.0
+	tail_mat.emission_energy_multiplier = 6.0 if on else (1.8 if headlights[0].visible else 0.3)
+	tail_light.light_energy = 0.0
 
 
 func set_headlights(on: bool) -> void:
 	for l in headlights:
 		l.visible = on
-	head_mat.emission_energy_multiplier = 14.0 if on else 0.6
+	head_mat.emission_energy_multiplier = 12.0 if on else 0.15
 
 
 func _setup_materials(c: Color) -> void:
@@ -159,6 +159,14 @@ func _loft_body() -> ArrayMesh:
 			# Slight tumblehome above the beltline and a crease along the shoulder.
 			if se.y > 0.0:
 				x *= lerpf(1.0, 0.9, se.y * se.y)
+			# Wheel arches: lift the lower flanks around each axle.
+			if absf(x) > 0.5:
+				for wz in [-1.32, 1.28]:
+					var u: float = (z - wz) / 0.5
+					if absf(u) < 1.0:
+						var arch := 0.06 + 0.68 * sqrt(1.0 - u * u)
+						var side_k := smoothstep(0.5, 0.72, absf(x))
+						y = maxf(y, lerpf(y, arch, side_k))
 			pts.append(Vector3(x, y, z))
 		grid.append(pts)
 	_emit_grid(st, grid, true)
@@ -256,28 +264,26 @@ static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, inside: Ve
 
 
 func _add_details(root: Node3D) -> void:
-	# Headlights, tail light bar, grille, mirrors, side skirts.
-	for s in [-1.0, 1.0]:
-		var hl := BoxMesh.new()
-		hl.size = Vector3(0.36, 0.08, 0.12)
+	# Headlights: slim lenses following the nose; mirrors on the A-pillars.
+	for side in [-1.0, 1.0]:
+		var hl := CapsuleMesh.new()
+		hl.radius = 0.045
+		hl.height = 0.42
+		hl.radial_segments = 12
+		hl.rings = 4
 		var hi := _mesh(hl, head_mat)
-		hi.position = Vector3(0.6 * s, 0.6, -2.12)
-		hi.rotation.y = 0.18 * s
+		hi.position = Vector3(0.6 * side, 0.585, -2.075)
+		hi.rotation = Vector3(0.0, 0.42 * side, PI * 0.5 + 0.12 * side)
 		root.add_child(hi)
-		var mirror := BoxMesh.new()
-		mirror.size = Vector3(0.16, 0.09, 0.12)
-		var mi := _mesh(mirror, paint)
-		mi.position = Vector3(0.9 * s, 0.92, -0.55)
-		root.add_child(mi)
 	var tail := BoxMesh.new()
-	tail.size = Vector3(1.45, 0.05, 0.05)
+	tail.size = Vector3(1.4, 0.045, 0.04)
 	var ti := _mesh(tail, tail_mat)
-	ti.position = Vector3(0, 0.76, 2.2)
+	ti.position = Vector3(0, 0.765, 2.205)
 	root.add_child(ti)
 	var grille := BoxMesh.new()
-	grille.size = Vector3(1.0, 0.13, 0.06)
+	grille.size = Vector3(0.9, 0.1, 0.05)
 	var gi := _mesh(grille, dark)
-	gi.position = Vector3(0, 0.38, -2.2)
+	gi.position = Vector3(0, 0.37, -2.19)
 	root.add_child(gi)
 	for s in [-1.0, 1.0]:
 		var skirt := BoxMesh.new()

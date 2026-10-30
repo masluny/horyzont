@@ -1,0 +1,2 @@
+[ {"time": 18.6, "weather": "pogodnie", "drive": 3, "car_cam": [3.5, 1.2, -5.0], "out": "/Users/macbookkacper/dev/horyzont/dev/out/car_a.png", "frames": 2, "width": 640},
+  {"time": 18.6, "weather": "pogodnie", "drive": 1, "car_cam": [-4.5, 1.6, 4.0], "out": "/Users/macbookkacper/dev/horyzont/dev/out/car_b.png", "frames": 2, "width": 640} ]

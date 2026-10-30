@@ -1,0 +1,4 @@
+[ {"time": 19.55, "weather": "zlota_mgielka", "drive": 7, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/dev/out/k1.png", "frames": 2},
+  {"time": 4.4, "weather": "poranna_mgla", "drive": 7, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/dev/out/k2.png", "frames": 2},
+  {"time": 19.9, "weather": "burzowy_zachod", "drive": 7, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/dev/out/k3.png", "frames": 2},
+  {"time": 23.8, "weather": "pogodnie", "drive": 6, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/k4.png", "frames": 2} ]

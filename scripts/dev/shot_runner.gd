@@ -38,6 +38,15 @@ func _render(shot: Dictionary) -> void:
 		var t_end := Time.get_ticks_msec() + int(float(shot["drive"]) * 1000.0)
 		while Time.get_ticks_msec() < t_end:
 			await get_tree().process_frame
+		if shot.has("car_cam"):
+			var cc: Array = shot["car_cam"]
+			camera.set_process(false)
+			var xf: Transform3D = world.car.global_transform
+			camera.global_position = xf * Vector3(cc[0], cc[1], cc[2])
+			camera.look_at(xf * Vector3(0, 0.4, 0))
+			camera.fov = 40.0
+			for k in 8:
+				await get_tree().process_frame
 		print("drive: speed %.1f km/h gear %d rpm %.0f pos %s" % [world.car.speed_kmh, world.car.gear, world.car.rpm, world.car.global_position])
 	elif shot.has("cam") and camera:
 		camera.set_process(false)
