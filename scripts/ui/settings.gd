@@ -7,7 +7,7 @@ const QUALITY_IDS: PackedStringArray = ["niska", "srednia", "wysoka", "ultra"]
 const QUALITY_LABELS: PackedStringArray = ["Niska", "Średnia", "Wysoka", "Ultra"]
 
 static var quality := "wysoka"
-static var render_scale := 0.62
+static var render_scale := 0.58
 static var fullscreen := true
 static var vsync := true
 static var max_fps := 0

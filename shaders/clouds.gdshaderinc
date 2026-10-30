@@ -38,7 +38,7 @@ vec4 cloud_weather_at(vec2 xz) {
 
 float cloud_local_coverage(vec4 w) {
 	float c = cloud_coverage;
-	return smoothstep(1.0 - 1.12 * c, 1.32 - 1.12 * c, w.r) * clamp(c * 3.0, 0.0, 1.0);
+	return smoothstep(0.85 - c, 1.15 - c, w.r) * clamp(c * 3.0, 0.0, 1.0);
 }
 
 // wp: (x, altitude, z) in km.
@@ -54,7 +54,7 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 	vec4 n = textureLod(cloud_shape, sp, 0.0);
 	float fbm = n.g * 0.625 + n.b * 0.25 + n.a * 0.125;
 	float base = clamp((n.r - (fbm - 1.0)) / (2.0 - fbm), 0.0, 1.0);
-	base = clamp((base - 0.32) / 0.68, 0.0, 1.0) * prof;
+	base = clamp((base - 0.18) / 0.82, 0.0, 1.0) * prof;
 	base = clamp((base - (1.0 - cov)) / max(cov, 1e-3), 0.0, 1.0) * cov;
 	if (base <= 0.0) {
 		return 0.0;
@@ -64,13 +64,29 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 		vec3 dn = textureLod(cloud_detail, dp, 0.0).rgb;
 		float dfbm = dn.r * 0.625 + dn.g * 0.25 + dn.b * 0.125;
 		float dmod = mix(dfbm, 1.0 - dfbm, clamp(hf * 5.0, 0.0, 1.0));
-		base = clamp((base - dmod * 0.55) / max(1.0 - dmod * 0.55, 1e-3), 0.0, 1.0);
+		base = clamp((base - dmod * 0.42) / max(1.0 - dmod * 0.42, 1e-3), 0.0, 1.0);
 	}
 	return base * cloud_density;
 }
 
 float cloud_phase(float c) {
 	return mix(phase_hg(c, 0.78), phase_hg(c, -0.22), 0.32) + phase_hg(c, 0.97) * 0.08;
+}
+
+// Approximate transmittance of sunlight through the cumulus layer above a
+// ground point (three coarse samples, no detail) — used for cloud shadows.
+float cloud_shadow_at(vec2 ground_xz_km, vec3 ldir) {
+	if (cloud_coverage < 0.01 || ldir.y <= 0.02) {
+		return 1.0;
+	}
+	float od = 0.0;
+	for (int i = 0; i < 3; i++) {
+		float hf = 0.15 + 0.3 * float(i);
+		float alt = cloud_bottom + hf * cloud_thickness;
+		vec2 xz = ground_xz_km + ldir.xz / ldir.y * alt;
+		od += cloud_density_at(vec3(xz.x, alt, xz.y), hf, false);
+	}
+	return exp(-od * cloud_thickness / 3.0 * CLOUD_EXTINCTION * 0.35);
 }
 
 // Marches the cumulus layer. Returns (luminance, transmittance).

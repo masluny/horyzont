@@ -171,7 +171,7 @@ func apply_quality(q: String) -> void:
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 			sun.directional_shadow_max_distance = 320.0
-			sky.set_cloud_quality(48, 4)
+			sky.set_cloud_quality(42, 4)
 			if grass: grass.set_density(135)
 		"ultra":
 			env.ssr_enabled = true

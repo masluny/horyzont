@@ -12,7 +12,7 @@ uniform sampler2D multiscatter_lut : filter_linear, repeat_disable;
 uniform sampler2D ambient_lut : filter_linear, repeat_disable;
 uniform float sun_disk_radius = 0.0075;
 uniform float sun_disk_intensity = 70.0;
-uniform int cloud_steps = 48;
+uniform int cloud_steps = 42;
 uniform int cloud_light_steps = 4;
 
 global uniform float star_rotation;

@@ -5,6 +5,8 @@ shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/terrain_common.gdshaderinc"
+#include "res://shaders/atmosphere.gdshaderinc"
+#include "res://shaders/clouds.gdshaderinc"
 
 uniform sampler2D normalmap : filter_linear_mipmap, repeat_disable;
 uniform sampler2D maskmap : filter_linear_mipmap, repeat_disable;
@@ -22,13 +24,6 @@ uniform sampler2D gravel_albedo : source_color, filter_linear_mipmap_anisotropic
 uniform sampler2D gravel_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D gravel_arm : filter_linear_mipmap_anisotropic, repeat_enable;
 
-uniform sampler2D cloud_weather : filter_linear_mipmap, repeat_enable;
-
-global uniform vec3 sun_direction;
-global uniform float cloud_coverage;
-global uniform float cloud_density;
-global uniform float cloud_bottom;
-global uniform vec2 cloud_wind;
 global uniform float wetness;
 
 uniform int debug_mode = 0;
@@ -179,8 +174,8 @@ void fragment() {
 	}
 
 	// Gorse and heather patches break up the far meadows.
-	float shrub = smoothstep(0.58, 0.72, vnoise(world_pos.xz * 0.045) * 0.7 + vnoise(world_pos.xz * 0.21) * 0.3 + max(cavity, 0.0) * 1.5);
-	alb = mix(alb, vec3(0.025, 0.05, 0.015), shrub * w_grass * 0.75);
+	float shrub = smoothstep(0.6, 0.8, vnoise(world_pos.xz * 0.045) * 0.55 + vnoise(world_pos.xz * 0.21) * 0.3 + vnoise(world_pos.xz * 0.9) * 0.15 + max(cavity, 0.0) * 1.5);
+	alb = mix(alb, alb * vec3(0.55, 0.7, 0.5), shrub * w_grass * 0.6);
 	// Macro variation: dry patches, lush hollows.
 	alb *= mix(vec3(1.08, 1.02, 0.86), vec3(0.86, 0.95, 0.88), macro) * (1.0 + cavity * 0.25 * (1.0 - w_rock));
 	alb = mix(alb, alb * vec3(0.9, 1.0, 0.8), w_grass * smoothstep(0.0, -0.25, ridge));
@@ -206,13 +201,8 @@ void fragment() {
 	SPECULAR = 0.4;
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 
-	// Cloud shadow sampled where the sun ray meets the cloud base.
-	vec2 off = sun_direction.xz / max(sun_direction.y, 0.1) * (cloud_bottom + 0.8);
-	vec2 cuv = (world_pos.xz * 0.001 + off + cloud_wind * 0.55) / 46.0;
-	float cw = textureLod(cloud_weather, cuv, 2.0).r;
-	float c = cloud_coverage;
-	float cov = smoothstep(1.0 - 1.12 * c, 1.32 - 1.12 * c, cw) * clamp(c * 3.0, 0.0, 1.0);
-	cloud_light = 1.0 - clamp(cov * 1.5 * cloud_density, 0.0, 0.9);
+	// Cloud shadow from the same density field as the visible clouds.
+	cloud_light = dist < 2500.0 ? mix(0.12, 1.0, cloud_shadow_at(world_pos.xz * 0.001, sun_direction)) : 1.0;
 }
 
 void light() {

@@ -82,8 +82,8 @@ func coverage_at(world_xz: Vector2) -> float:
 	var uv := (world_xz * 0.001 + wind * 0.55) / 46.0
 	var px := Vector2i(posmod(int(uv.x * WEATHER_SIZE), WEATHER_SIZE), posmod(int(uv.y * WEATHER_SIZE), WEATHER_SIZE))
 	var w := weather_image.get_pixelv(px).r
-	var lo := 1.0 - 1.12 * c
-	return smoothstep(lo, lo + 0.32, w) * clampf(c * 3.0, 0.0, 1.0)
+	var lo := 0.85 - c
+	return smoothstep(lo, lo + 0.3, w) * clampf(c * 3.0, 0.0, 1.0)
 
 
 func _make_lut(size: Vector2i, shader: Shader, hdr: bool) -> SubViewport:

@@ -109,7 +109,7 @@ func update_sky(delta: float) -> void:
 		var offset := Vector2(sun_dir.x, sun_dir.z) / maxf(sun_dir.y, 0.08) * 2000.0
 		var cov := sky.coverage_at(cam_xz + offset)
 		var thick: float = weather.value("density") if weather else 1.0
-		cloud_shadow = lerpf(1.0, 0.12, clampf(cov * 1.6 * thick, 0.0, 1.0))
+		cloud_shadow = lerpf(1.0, 0.15, clampf(cov * cov * 1.4 * thick, 0.0, 1.0))
 	var tmax := maxf(t_sun.x, maxf(t_sun.y, t_sun.z))
 	sun_color = Color(t_sun.x / tmax, t_sun.y / tmax, t_sun.z / tmax) if tmax > 1e-6 else Color.BLACK
 	sun_strength = tmax * vis * cloud_shadow
