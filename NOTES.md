@@ -54,11 +54,36 @@ Zegar (`Game.clock`): `time` (godziny 0..24), `time_scale`, `paused`,
 Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)`,
 `PRESETS` (słownik id → {name, ...}), `auto_cycle`, `rain`, `wetness`.
 
+## Świat
+- `scripts/world/terrain_data.gd` — heightmap 2048² (5 m/texel, 10.24 km) baked na GPU
+  (`shaders/bake/terrain_height.gdshader`), droga (pętla ~23 km) planowana i wcinana na CPU,
+  cache `user://cache/terrain_v6.bin` (`--regen` wymusza). Kolizja: HeightMapShape3D + trimesh drogi.
+- `terrain_renderer.gd` + `shaders/terrain.gdshader` — clipmap 7 poziomów (węzły w origin, środek
+  przez instance uniform → poprawne motion vectors), własne `light()` (cienie chmur tylko na słońcu).
+- `water_renderer.gd` + `shaders/water.gdshader` — ocean na clipmapie, Gerstner, głębokość z heightmapy.
+- `grass_field.gd` + `shaders/grass.gdshader` — kępki trawy rozmieszczane w całości w vertex shaderze.
+- `road_builder.gd`, `shaders/road.gdshader`, `rain.gd`.
+- `scripts/car/` — `car.gd` (raycast vehicle, autopilot), `car_model.gd` (proceduralne GT), `camera_rig.gd`.
+- `scripts/core/postcards.gd` — 9 pocztówek (miejsce + warunek światła/pogody), album w `user://album`.
+- `scripts/ui/*` i `scripts/audio/*` — napisane przez Groka (cursor-agent), zintegrowane w main.gd.
+
+## Wydajność (MacBook Air M4, 2940×1846, MetalFX 0.62, preset „wysoka”)
+~60 fps (vsync), p99 ~18–21 ms. SSR+SSAO ≈ 4.5 ms (połowa rozdzielczości, SSAO low),
+teren ≈ 4 ms (rozgałęzione próbkowanie materiałów), cienie ≈ 2 ms (320 m, poziomy clipmapy ≤3).
+Air się grzeje — przy długiej grze możliwy throttling → preset „średnia”.
+Benchmark: `dev/run.sh 70 -- --bench=15 --time=19.4 --weather=cumulusy`.
+
+## Lekcje (cd.)
+- Gęstość mgły Godota: ~12× „podręcznikowej” (mnożnik w weather.gd).
+- Nowe class_name wymagają `godot --headless --path . --import` przed uruchomieniem.
+- `--check-only` nie widzi autoloadu `Game` → `dev/check.sh` filtruje te błędy.
+- Tekstura leafy_grass jest beżowa → kolor łąki z palety w shaderze (meadow_color).
+
 ## Stan / następne kroki
-- [x] Niebo, chmury, cykl dnia, pogoda
-- [ ] Teren wyspy (heightmap GPU, clipmap), droga (spline, wycięcie w terenie)
-- [ ] Woda (ocean), roślinność (Poly Haven CC0)
-- [ ] Auto (raycast vehicle), kamery, autopilot „Kino”
-- [ ] Gameplay: pocztówki, tryb foto, album
-- [ ] UI (menu, HUD, ustawienia), audio silnika
-- [ ] Wydajność na M4, presety jakości
+- [x] Niebo, chmury, cykl dnia, pogoda (8 presetów), deszcz, mgła
+- [x] Wyspa, droga, ocean, trawa, auto, kamery (pościg/daleko/maska/kino/foto)
+- [x] UI (menu, HUD, pauza, ustawienia, album), audio proceduralne, pocztówki
+- [ ] Propsy (Grok: murki, latarnia, barierki, głazy, domy) — brief `dev/briefs/props.md`
+- [ ] Chmury: ostrzejsze krawędzie cumulusów; noc: test gwiazd/księżyca na wyspie
+- [ ] Ręczny test jazdy (klawiatura) — sprawdzić prowadzenie auta
+- [ ] Ewentualnie eksport .app (wymaga export templates)
