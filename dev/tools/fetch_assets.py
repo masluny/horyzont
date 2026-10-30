@@ -7,15 +7,13 @@ UA = {"User-Agent": "horyzont-dev"}
 
 PH_TEX = {
     "4k": ["rock_face_03", "coast_land_rocks_01", "sparse_grass", "forest_floor", "gravel_road",
-           "coast_sand_01", "asphalt_02", "dirt"],
-    "2k": ["pine_bark", "bark_brown_02", "jolcham_oak_bark_01", "lichen_rock"],
+           "coast_sand_01", "asphalt_02"],
+    "2k": ["pine_bark", "bark_brown_02", "jolcham_oak_bark_01"],
 }
-PH_MODELS = ["rock_moss_set_01", "rock_moss_set_02", "rock_07", "rock_09", "boulder_01", "stone_01",
-             "rock_face_01", "rock_face_02", "namaqualand_boulder_02", "fern_02", "shrub_02", "shrub_03",
-             "shrub_04", "shrub_sorrel_01", "weed_plant_02", "nettle_plant", "dandelion_01",
-             "tree_stump_01", "dead_tree_trunk", "dry_branches_medium_01"]
-ACG = ["LeafSet016", "LeafSet024", "LeafSet022", "LeafSet020", "LeafSet014", "Foliage001", "Foliage002",
-       "Foliage003", "Foliage004", "Foliage006", "Foliage007", "Foliage008"]
+PH_MODELS = ["rock_07", "rock_09", "boulder_01", "stone_01", "rock_face_01", "rock_face_02",
+             "namaqualand_boulder_02", "fern_02", "shrub_sorrel_01", "weed_plant_02",
+             "tree_stump_01", "dead_tree_trunk"]
+ACG = ["LeafSet016", "LeafSet024", "LeafSet020", "Foliage002"]
 
 
 def fetch(url):

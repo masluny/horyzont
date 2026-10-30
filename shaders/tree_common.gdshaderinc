@@ -12,16 +12,21 @@ instance uniform int table_row = 0;
 
 global uniform vec2 world_wind;
 
-float tree_fade(float d) {
+// x: fading in, y: fading out. The two layers of a cross-fade use opposite ends
+// of the same noise, so every pixel is covered by exactly one of them.
+vec2 tree_fade(float d) {
 	if (lod_kind == 2) {
-		return 1.0;
+		return vec2(1.0);
 	}
 	float a = smoothstep(lod_r0 - 9.0, lod_r0, d);
-	return lod_kind == 0 ? 1.0 - a : a * (1.0 - smoothstep(lod_r1 - 20.0, lod_r1, d));
+	if (lod_kind == 0) {
+		return vec2(1.0, 1.0 - a);
+	}
+	return vec2(a, 1.0 - smoothstep(lod_r1 - 20.0, lod_r1, d));
 }
 
 // Writes the instance placement and wind into position, normal and tangent.
-float tree_place(int id, inout vec3 v, inout vec3 n, inout vec3 t, float flex, float phase, float flutter, vec3 cam) {
+vec2 tree_place(int id, inout vec3 v, inout vec3 n, inout vec3 t, float flex, float phase, float flutter, vec3 cam) {
 	vec4 inst = texelFetch(tree_table, ivec2(id, table_row), 0);
 	float yaw = fract(inst.x * 0.137 + inst.z * 0.331) * 6.2831;
 	float c = cos(yaw);
@@ -49,14 +54,14 @@ float tree_place(int id, inout vec3 v, inout vec3 n, inout vec3 t, float flex, f
 
 global uniform float frame_jitter;
 
-void tree_dither(vec2 frag, float fade) {
-	if (fade >= 0.999) {
+void tree_dither(vec2 frag, vec2 fade) {
+	if (fade.x >= 0.999 && fade.y >= 0.999) {
 		return;
 	}
 	// Interleaved gradient noise, shifted every frame so the upscaler resolves it.
 	vec2 q = frag + frame_jitter * vec2(5.588, 2.113);
 	float ign = fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715))));
-	if (fade < ign) {
+	if (fade.x < ign || fade.y < 1.0 - ign) {
 		discard;
 	}
 }

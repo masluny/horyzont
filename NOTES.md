@@ -3,7 +3,7 @@
 Spokojna gra o jeździe autem po wyspie. Najważniejsze jest światło: wschody,
 zachody, chmury i pogoda. Prosty gameplay, cel 60 fps na MacBooku Air M4.
 
-Silnik: Godot 4.7.2 (Forward+, Metal, Jolt, MetalFX temporal upscaling 0.62).
+Silnik: Godot 4.7.2 (Forward+, Metal, Jolt, MetalFX temporal upscaling 0.58).
 
 ## Uruchamianie
 
@@ -55,38 +55,57 @@ Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)
 `PRESETS` (słownik id → {name, ...}), `auto_cycle`, `rain`, `wetness`.
 
 ## Świat
-- `scripts/world/terrain_data.gd` — heightmap 2048² (5 m/texel, 10.24 km) baked na GPU
+- `scripts/world/terrain_data.gd` — heightmap 4096² (2,5 m/texel, 10,24 km) baked na GPU
   (`shaders/bake/terrain_height.gdshader`), droga (pętla ~23 km) planowana i wcinana na CPU,
-  cache `user://cache/terrain_v6.bin` (`--regen` wymusza). Kolizja: HeightMapShape3D + trimesh drogi.
-- `terrain_renderer.gd` + `shaders/terrain.gdshader` — clipmap 7 poziomów (węzły w origin, środek
-  przez instance uniform → poprawne motion vectors), własne `light()` (cienie chmur tylko na słońcu).
+  cache `user://cache/terrain_v8.bin` (`--regen` wymusza). Kolizja: HeightMapShape3D co drugi texel + trimesh drogi.
+  Mapa ekosystemu `terrain_eco.gdshader` (4096²): R trawa, G las, B krzewy, A suchość. Czyta ją teren, trawa i las.
+- `terrain_renderer.gd` + `shaders/terrain.gdshader` — clipmap 7 poziomów, 6 materiałów 4K (łąka, ściółka, 2 skały,
+  piasek, żwir), mieszanie po wysokości, tekstury rozgałęzione po wagach.
 - `water_renderer.gd` + `shaders/water.gdshader` — ocean na clipmapie, Gerstner, głębokość z heightmapy.
-- `grass_field.gd` + `shaders/grass.gdshader` — kępki trawy rozmieszczane w całości w vertex shaderze.
+- `grass_field.gd` + `shaders/grass.gdshader` — kafle źdźbeł (3 LOD). Co klatkę lista widocznych kafli idzie do tekstury-tabeli,
+  z której vertex shader czyta pozycję po INSTANCE_ID. Bufory MultiMesh się nie zmieniają, więc motion vectors są poprawne.
+  `shaders/meadow_decor.gdshader` — kłosy (skan) i kwiaty na tej samej tabeli.
+- `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~200 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
+  impostory od 88 m (8 widoków na wariant, wypiekane przy starcie z tych samych siatek). Cienie: LOD1 do 46 m, bryły do 125 m.
+- `props.gd` — murki, domy, barierki, latarnia, skanowane głazy i pnie (`assets/models/baked`), paprocie przy drodze.
 - `road_builder.gd`, `shaders/road.gdshader`, `rain.gd`.
 - `scripts/car/` — `car.gd` (raycast vehicle, autopilot), `car_model.gd` (proceduralne GT), `camera_rig.gd`.
 - `scripts/core/postcards.gd` — 9 pocztówek (miejsce + warunek światła/pogody), album w `user://album`.
 - `scripts/ui/*` i `scripts/audio/*` — napisane przez Groka (cursor-agent), zintegrowane w main.gd.
 
-## Wydajność (MacBook Air M4, 2940×1846, MetalFX 0.62, preset „wysoka”)
-~60 fps (vsync), p99 ~18–21 ms. SSR+SSAO ≈ 4.5 ms (połowa rozdzielczości, SSAO low),
-teren ≈ 4 ms (rozgałęzione próbkowanie materiałów), cienie ≈ 2 ms (320 m, poziomy clipmapy ≤3).
-Air się grzeje — przy długiej grze możliwy throttling → preset „średnia”.
-Benchmark: `dev/run.sh 70 -- --bench=15 --time=19.4 --weather=cumulusy`.
+## Zasoby i narzędzia
+- `dev/tools/fetch_assets.py` pobiera zasoby CC0, `dev/tools/fix_imports.py` ustawia kompresję VRAM i mipmapy.
+- `godot --path . -- --bake_foliage` składa atlasy gałązek ze skanów liści (`assets/foliage/baked`).
+- `godot --path . -- --bake_models` upraszcza skany do `assets/models/baked/*.res`.
+- Po dodaniu pliku: `godot --headless --path . --import`, potem `fix_imports.py`, potem znowu `--import`.
+
+## Niebo (cd.)
+- Atmosfera i chmury liczą się w połowie rozdzielczości w `sky_lowres.gdshader` (dwa SubViewporty na zmianę, historia z
+  reprojekcją po obrocie kamery). `sky_dome.gdshader` dokłada tylko słońce, księżyc i gwiazdy.
+- `cloud_shadow_pass.gdshader` — mapa cieni chmur 256² wokół kamery (8 km), odświeżana co 3 klatki, czytana globalnie.
+
+## Wydajność (MacBook Air M4, 2940×1846, MetalFX 0.58, preset „wysoka”)
+WYDAJNOSC_PLACEHOLDER
+Stały koszt (MetalFX, tonemapping) to ok. 6,2 ms, reszta klatki skaluje się z liczbą pikseli.
+Przy szukaniu kosztów: `--perf_off=trees,grass,clouds,ssr,ssao,glow,shadow,treeshadow,impostors,sharpen`, a ławka w konkretnym
+miejscu: `dev/run.sh 60 -- --bench=6 --mode=chase --uncapped --road_near=3200,0,1600 --time=13 --weather=cumulusy`.
+Pomiary mają sens tylko gdy nic innego nie używa GPU.
 
 ## Lekcje (cd.)
 - Gęstość mgły Godota: ~12× „podręcznikowej” (mnożnik w weather.gd).
 - Nowe class_name wymagają `godot --headless --path . --import` przed uruchomieniem.
 - `--check-only` nie widzi autoloadu `Game` → `dev/check.sh` filtruje te błędy.
-- Tekstura leafy_grass jest beżowa → kolor łąki z palety w shaderze (meadow_color).
+- Kolor łąki pochodzi z palety w shaderze, wspólnej dla terenu i źdźbeł, żeby daleka trawa wtapiała się w bliską.
+- Mipy alfy zjadają cienkie liście (`tree_alpha`), a daleko zamieniają impostor w pełny prostokąt (limit LOD w shaderze).
+- W `light()` każdy człon niezależny od ATTENUATION musi być tylko dla świateł kierunkowych, inaczej reflektory świecą w całym klastrze.
+- MultiMesh bez ustawionych transformacji ma macierze zerowe: nawet przy własnych pozycjach trzeba wpisać Identity.
+- Przy interpolacji mapy ekosystemu liczy się rozdzielczość: 5 m/texel wynosiło trawę na asfalt, stąd 2,5 m i próg w shaderze.
+- Dwie warstwy przenikania LOD muszą używać przeciwnych końców tego samego szumu, inaczej zostają dziury.
 
-## Stan / następne kroki (30.10, 6:40)
-- [x] Niebo, chmury, cykl dnia, pogoda (8 presetów), deszcz, mgła
-- [x] Wyspa, droga, ocean, trawa, auto, kamery (pościg/daleko/maska/kino/foto)
-- [x] UI (menu, HUD, pauza, ustawienia, album, pomoc F1, ekran ładowania), audio, pocztówki
-- [x] Propsy (Grok): murki, głazy, domy, barierki, latarnia z obrotową wiązką
-- [x] Cienie chmur z gęstości 3D, skala renderu 0.58 → 60 fps (p99 < 18 ms) na M4
-- [ ] Ręczny test jazdy na klawiaturze (symulowany test przechodzi) i odsłuch dźwięku
-- [ ] Drzewa (Poly Haven ma za ciężkie modele — trzeba proceduralnych lub impostorów)
-- [ ] Chmury: jeszcze ostrzejsze „kalafiory” cumulonimbusów, cienie chmur na wodzie/trawie
-- [ ] Eksport .app (wymaga export templates, ~1 GB z GitHuba Godota)
+## Stan / następne kroki (30.10, wieczór)
+- [x] Niebo, chmury (kopuły, półrozdzielczość), cykl dnia, pogoda, deszcz, mgła
+- [x] Wyspa 2,5 m, łąka z kłosami i kwiatami, las, krzewy, skały, klify, paprocie
+- [x] Auto, kamery, UI, audio, pocztówki, tryb foto w natywnej rozdzielczości
+- [ ] Ręczny test jazdy na klawiaturze i odsłuch dźwięku
+- [ ] Eksport .app (wymaga export templates, ~1 GB)
 Zrzuty pokazowe: `screenshots/` (generuje `dev/shots_beauty.json`).

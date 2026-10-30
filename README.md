@@ -21,7 +21,7 @@ godot --path ~/dev/horyzont
 | T (przytrzymaj) | przyspieszenie czasu — czekanie na zachód słońca |
 | F | zdjęcie (pocztówka, jeśli jesteś w miejscu i światło się zgadza) |
 | Tab | następna pocztówka |
-| P | tryb foto (wolna kamera: WASD, Q/E góra-dół, Shift szybciej, Spacja zdjęcie) |
+| P | tryb foto (wolna kamera: WASD, Q/E góra-dół, Shift szybciej, Spacja zdjęcie; pełna rozdzielczość ekranu) |
 | L | światła ręcznie (domyślnie same się włączają o zmroku) |
 | R | powrót na drogę |
 | H | ukryj HUD, Esc — pauza (pora dnia, pogoda, tempo czasu) |

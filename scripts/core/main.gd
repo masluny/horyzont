@@ -412,7 +412,7 @@ func _build_environment() -> void:
 	env.fog_aerial_perspective = 0.85
 	env.fog_sky_affect = 0.0
 	env.fog_height = 25.0
-	env.ambient_light_sky_contribution = 0.78
+	env.ambient_light_sky_contribution = 0.66
 	env.ssao_enabled = true
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 1.6

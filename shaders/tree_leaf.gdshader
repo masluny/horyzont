@@ -18,7 +18,7 @@ varying vec3 v_col;
 varying float v_ao;
 varying float v_cloud;
 
-varying float v_fade;
+varying vec2 v_fade;
 
 void vertex() {
 	vec3 t = TANGENT;

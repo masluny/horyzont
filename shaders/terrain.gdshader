@@ -177,9 +177,14 @@ void fragment() {
 			}
 			// Sedimentary banding across the cliffs.
 			float strata = sin(world_pos.y * 0.42 + vnoise(world_pos.xz * 0.012) * 5.0) * 0.5 + 0.5;
-			a_r = alb_a * mix(0.82, 1.1, strata) * vec3(1.02, 0.98, 0.93);
+			// The same rock again at 45 m tiling gives the cliff its big forms.
+			vec2 uv_big = uv_side * 0.2;
+			float big = texture(rock_albedo, uv_big).g;
+			vec3 big_n = texture(rock_normal, uv_big).rgb * 2.0 - 1.0;
+			a_r = alb_a * mix(0.82, 1.1, strata) * mix(0.55, 1.35, smoothstep(0.08, 0.34, big));
+			a_r = mix(a_r, vec3(dot(a_r, vec3(0.3, 0.55, 0.15))), 0.42);
 			m_r = arm_a;
-			vec3 rs = nor_s * 2.0 - 1.0;
+			vec3 rs = nor_s * 2.0 - 1.0 + big_n * 1.3;
 			vec3 rt = nor_t * 2.0 - 1.0;
 			p_r = (side_x ? vec3(0.0, rs.y, rs.x) : vec3(rs.x, rs.y, 0.0)) * ws + vec3(rt.x, 0.0, -rt.y) * wt;
 		}
@@ -196,18 +201,18 @@ void fragment() {
 		alb = a_g * bwt.x + a_s * bwt.y + a_v * bwt.z + a_r * bwt.w + a_f * bwf;
 		arm = m_g * bwt.x + m_s * bwt.y + m_v * bwt.z + m_r * bwt.w + m_f * bwf;
 		vec3 tn = t_g * bwt.x + t_s * bwt.y + t_v * bwt.z + t_f * bwf;
-		float fade = 1.0 - smoothstep(250.0, 700.0, dist);
+		float fade = 1.0 - smoothstep(350.0, 700.0, dist);
 		vec3 pert = vec3(tn.x, 0.0, -tn.y) * (1.0 - bwt.z * 0.6) + p_r * bwt.w;
 		n = normalize(n_geo + pert * 0.9 * fade);
 		float far_k = smoothstep(400.0, 700.0, dist);
 		vec3 far_alb = meadow_color(dry) * w_grass + textureLod(sand_albedo, uv_s, 9.0).rgb * w_sand
 				+ textureLod(gravel_albedo, uv_v, 9.0).rgb * 0.72 * w_gravel
-				+ textureLod(rock_albedo, uv_g, 9.0).rgb * w_rock + textureLod(forest_albedo, uv_f, 9.0).rgb * vec3(0.3, 0.36, 0.2) * w_forest;
+				+ mix(textureLod(rock_albedo, uv_g, 9.0).rgb, vec3(0.2), 0.42) * w_rock + textureLod(forest_albedo, uv_f, 9.0).rgb * vec3(0.3, 0.36, 0.2) * w_forest;
 		alb = mix(alb, far_alb, far_k);
 	} else {
 		vec2 uv = world_pos.xz / 4.6;
 		alb = meadow_color(dry) * w_grass + textureLod(sand_albedo, uv, 9.0).rgb * w_sand
-				+ textureLod(gravel_albedo, uv, 9.0).rgb * 0.72 * w_gravel + textureLod(rock_albedo, uv, 9.0).rgb * w_rock
+				+ textureLod(gravel_albedo, uv, 9.0).rgb * 0.72 * w_gravel + mix(textureLod(rock_albedo, uv, 9.0).rgb, vec3(0.2), 0.42) * w_rock
 				+ textureLod(forest_albedo, uv, 9.0).rgb * vec3(0.3, 0.36, 0.2) * w_forest;
 		arm = vec3(1.0, 0.85, 0.0);
 	}

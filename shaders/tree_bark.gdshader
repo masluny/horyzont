@@ -12,7 +12,7 @@ global uniform float wetness;
 
 varying float v_moss;
 
-varying float v_fade;
+varying vec2 v_fade;
 
 void vertex() {
 	vec3 t = TANGENT;

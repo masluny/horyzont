@@ -7,9 +7,10 @@ extends Node
 
 const OUT := "res://assets/models/baked/"
 const MODELS := {
-	"rock_moss_set_01": 2600, "rock_moss_set_02": 2600, "rock_07": 2600, "rock_09": 2600,
+	"rock_07": 2600, "rock_09": 2600,
 	"boulder_01": 3200, "stone_01": 1800, "rock_face_01": 3200, "rock_face_02": 3200,
 	"namaqualand_boulder_02": 3200, "tree_stump_01": 2000, "dead_tree_trunk": 3000,
+	"fern_02": 600, "shrub_sorrel_01": 600, "weed_plant_02": 600,
 }
 
 

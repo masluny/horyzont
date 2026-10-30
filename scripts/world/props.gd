@@ -71,6 +71,7 @@ func build(data: TerrainData, _sky: SkySystem) -> void:
 	_build_walls()
 	_build_boulders()
 	_build_verge_stones()
+	_build_ferns()
 	_build_rails()
 	_update_shadows()
 	if Game.clock:
@@ -823,6 +824,32 @@ func _build_verge_stones() -> void:
 	print("props: verge stones %d, logs %d" % [stones, logs])
 
 
+## Scanned ferns and herbs along the road through the woods.
+func _build_ferns() -> void:
+	var meshes: Array[ArrayMesh] = []
+	for id in ["fern_02", "shrub_sorrel_01", "weed_plant_02"]:
+		meshes.append(load("res://assets/models/baked/%s.res" % id))
+	var n := _data.road_points.size()
+	var placed := 0
+	var i := 0
+	while i < n:
+		i += 1
+		var f := _frame(i)
+		for k in 3:
+			var side := -1.0 if _rng.randf() < 0.5 else 1.0
+			var dist := _rng.randf_range(6.0, 30.0)
+			var at: Vector3 = f[0] + Vector3(f[2]) * side * dist + Vector3(f[1]) * _rng.randf_range(-2.0, 2.0)
+			var eco := _data.eco_at(at.x, at.z)
+			if eco.g < 0.3 or _rng.randf() > eco.g * 0.85 or _near_road(at.x, at.z, 5.6):
+				continue
+			var h := _data.height_at(at.x, at.z)
+			var b := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * _rng.randf_range(0.7, 1.5))
+			_add_inst("fern", at.x, at.z, _rng.randi() % meshes.size(), Transform3D(b, Vector3(at.x, h - 0.02, at.z)), Color.WHITE)
+			placed += 1
+	_flush_kind("fern", meshes, null, 85.0, false)
+	print("props: ferns %d" % placed)
+
+
 # --- guard rails -------------------------------------------------------------
 
 func _build_rails() -> void:
@@ -982,7 +1009,8 @@ func _w_loop() -> PackedVector2Array:
 # --- instancing --------------------------------------------------------------
 
 func _add_inst(kind: String, x: float, z: float, variant: int, xf: Transform3D, col: Color) -> void:
-	var key := Vector2i(floori(x / CHUNK), floori(z / CHUNK))
+	var chunk := 70.0 if kind == "fern" else CHUNK
+	var key := Vector2i(floori(x / chunk), floori(z / chunk))
 	var id := "%s|%d|%d|%d" % [kind, key.x, key.y, variant]
 	var batch: Array = _batches.get(id, [])
 	if batch.is_empty():
