@@ -1,0 +1,2 @@
+[ {"time": 20.9, "weather": "pogodnie", "cam": [-3370, 34, -770], "look": [-3444, 30, -835], "out": "/Users/macbookkacper/dev/horyzont/dev/out/pv1.png", "frames": 50},
+  {"time": 18.9, "weather": "cumulusy", "drive": 5, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/pv2.png", "frames": 2} ]

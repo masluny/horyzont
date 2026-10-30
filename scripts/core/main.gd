@@ -80,6 +80,10 @@ func _ready() -> void:
 	road.name = "Road"
 	add_child(road)
 	road.build(terrain, sky)
+	var props := Props.new()
+	props.name = "Props"
+	add_child(props)
+	props.build(terrain, sky)
 	car = Car.new()
 	car.name = "Car"
 	car.terrain = terrain
