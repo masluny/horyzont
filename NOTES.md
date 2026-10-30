@@ -68,7 +68,7 @@ Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)
 - `grass_field.gd` + `shaders/grass.gdshader` — kafle źdźbeł (3 LOD). Co klatkę lista widocznych kafli idzie do tekstury-tabeli,
   z której vertex shader czyta pozycję po INSTANCE_ID. Bufory MultiMesh się nie zmieniają, więc motion vectors są poprawne.
   `shaders/meadow_decor.gdshader` — kłosy (skan) i kwiaty na tej samej tabeli.
-- `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~170 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
+- `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~143 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
   impostory od 74 m (8 widoków na wariant, wypiekane przy starcie z tych samych siatek). Cienie: LOD1 do 42 m, bryły do 125 m.
 - `props.gd` — murki, domy, barierki, latarnia, skanowane głazy i pnie (`assets/models/baked`), paprocie przy drodze.
 - `road_builder.gd`, `shaders/road.gdshader`, `rain.gd`.

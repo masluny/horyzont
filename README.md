@@ -17,6 +17,20 @@ Statyczna scena: auto stoi, a obraz ma czas się ustabilizować. Preset Ultra w 
 | ![Wyspa z lotu](docs/shots/08_golden_wyspa.jpg) | ![Poranna mgła](docs/shots/09_poranna_mgla.jpg) |
 | ![Burzowy zachód](docs/shots/10_burza.jpg) | ![Jazda w złotej godzinie](screenshots/01_zlota_godzina.png) |
 
+## Jak to działa
+Świat powstaje w kodzie: około 10 tys. linii GDScript i 2,5 tys. linii shaderów. Z zewnątrz pochodzą tylko zasoby CC0, czyli tekstury oraz skany liści, głazów i pni.
+
+| Element | Rozwiązanie |
+|---|---|
+| Silnik | Godot 4.7, Forward+, Metal, Jolt (fizyka 120 Hz), MetalFX Temporal z 58% rozdzielczości |
+| Atmosfera | model Hillaire 2020 w LUT-ach HDR, pełny cykl dnia z krzywą ekspozycji |
+| Chmury | wolumetryczne (Schneider) i cirrusy, liczone w połowie rozdzielczości z historią i reprojekcją po obrocie kamery, mapa cieni chmur 256² na 8 km |
+| Teren | heightmapa 4096² (2,5 m/texel, 10,24 km) wypiekana na GPU, clipmapa 7 poziomów, 6 materiałów 4K, mapa ekosystemu 4096², droga około 23 km wcinana w teren |
+| Ocean | clipmapa 9 poziomów, 5 fal Gerstnera, kolor i piana z głębokości odczytanej z heightmapy |
+| Trawa | kafle źdźbeł z 3 LOD, pozycje w teksturze-tabeli czytanej po `INSTANCE_ID`, dzięki czemu motion vectors dla upscalera zostają poprawne |
+| Las | 143 tys. drzew i krzewów z generatora gałęzi (5 gatunków), LOD0, LOD1 i impostory z 8 widoków wypiekane przy starcie |
+| Auto | raycast vehicle na 4 promieniach, proceduralna karoseria z przekrojów, autopilot i 5 ujęć kinowych |
+
 ## Uruchomienie
 Wymaga Godota 4.7 (Forward+). Gra powstała i była testowana na macOS z Metal. Po sklonowaniu raz zaimportuj zasoby:
 ```bash
