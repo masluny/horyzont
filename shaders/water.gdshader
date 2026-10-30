@@ -13,6 +13,7 @@ uniform sampler2D foam_noise : filter_linear_mipmap, repeat_enable;
 global uniform vec2 world_wind;
 global uniform float rain_amount;
 global uniform vec3 sun_direction;
+global uniform float night_factor;
 
 instance uniform vec2 center;
 instance uniform float spacing = 1.5;
@@ -107,6 +108,7 @@ void fragment() {
 	vec3 sand = vec3(0.32, 0.28, 0.2);
 	vec3 col = mix(shallow, deep, smoothstep(0.0, 14.0, depth));
 	col = mix(sand * 0.55, col, smoothstep(0.0, 1.6, depth));
+	col *= mix(1.0, 0.25, night_factor);
 
 	// Shore foam: bands that move in with the swell, broken up by noise.
 	float fn = texture(foam_noise, world_pos.xz / 7.0 + vec2(t * 0.02, 0.0)).r;

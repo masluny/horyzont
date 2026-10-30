@@ -1,0 +1,8 @@
+[ {"time": 19.55, "weather": "zlota_mgielka", "drive": 9, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/01_zlota_godzina.png", "frames": 2, "width": 1600},
+  {"time": 20.05, "weather": "pogodnie", "cam": [-4250, 7, 300], "look": [-6000, 30, -1100], "out": "/Users/macbookkacper/dev/horyzont/screenshots/02_zachod_nad_morzem.png", "frames": 60, "width": 1600},
+  {"time": 20.85, "weather": "pogodnie", "cam": [-3360, 30, -760], "look": [-3444, 34, -835], "out": "/Users/macbookkacper/dev/horyzont/screenshots/03_latarnia_niebieska_godzina.png", "frames": 60, "width": 1600},
+  {"time": 4.5, "weather": "poranna_mgla", "drive": 8, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/04_poranna_mgla.png", "frames": 2, "width": 1600},
+  {"time": 13.0, "weather": "cumulusy", "drive": 6, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/05_cumulusy.png", "frames": 2, "width": 1600},
+  {"time": 19.8, "weather": "burzowy_zachod", "drive": 8, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/06_burzowy_zachod.png", "frames": 2, "width": 1600},
+  {"time": 15.0, "weather": "deszcz", "drive": 6, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/screenshots/07_deszcz.png", "frames": 2, "width": 1600},
+  {"time": 0.5, "weather": "pogodnie", "drive": 6, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/08_noc.png", "frames": 2, "width": 1600} ]

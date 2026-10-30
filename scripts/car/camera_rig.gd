@@ -133,11 +133,13 @@ func _cinematic(delta: float) -> void:
 			fov = lerpf(fov, clampf(900.0 / maxf(_anchor.distance_to(car_pos), 10.0), 14.0, 55.0), 1.0 - exp(-delta * 1.5))
 		2: # Drone, slow orbit.
 			_orbit.x += delta * 0.06
-			var want := car_pos + f.rotated(Vector3.UP, PI + _orbit.x) * 34.0 + Vector3.UP * 22.0
+			var want := car_pos + f.rotated(Vector3.UP, PI + _orbit.x) * 30.0 + Vector3.UP * 11.0
 			_pos = _pos.lerp(want, 1.0 - exp(-delta * 1.5))
 			global_position = _pos
-			look_at(car_pos)
-			fov = 55.0
+			# Aim above the car so the horizon and sky stay in frame.
+			var to_car := car_pos - _pos
+			look_at(car_pos + Vector3.UP * to_car.length() * 0.22)
+			fov = 58.0
 		3: # Leading the car, looking back.
 			var want := car_pos + f * 8.0 + right * 1.2 * _anchor_side + Vector3.UP * 0.4
 			_pos = _pos.lerp(want, 1.0 - exp(-delta * 5.0))
@@ -159,6 +161,7 @@ func _next_shot() -> void:
 	if _shot == 1:
 		var ahead := car_pos + f * maxf(target.speed_kmh, 30.0) * 0.18
 		_anchor = ahead + right * 9.0 * _anchor_side + Vector3.UP * 1.6
+		_anchor = _clear_line(_anchor, ahead)
 	elif _shot == 4:
 		# Long lens from far off the road, placed so the sun sits behind the car.
 		var sun := Game.clock.sun_dir if Game.clock else Vector3.UP
@@ -167,10 +170,28 @@ func _next_shot() -> void:
 			away = right
 		away = away.normalized()
 		_anchor = car_pos + f * 120.0 + away * 160.0
-		if terrain:
-			_anchor.y = maxf(_anchor.y, terrain.height_at(_anchor.x, _anchor.z) + 8.0)
+		_anchor = _clear_line(_anchor, car_pos + f * 60.0)
 	elif _shot == 2:
 		_orbit.x = randf() * TAU
+
+
+## Raises a camera position until the terrain no longer blocks the view of
+## `subject` (and the camera clears the grass).
+func _clear_line(cam: Vector3, subject: Vector3) -> Vector3:
+	if terrain == null:
+		return cam
+	cam.y = maxf(cam.y, terrain.height_at(cam.x, cam.z) + 2.2)
+	for _try in 12:
+		var blocked := false
+		for k in range(1, 10):
+			var p := cam.lerp(subject + Vector3.UP, k / 10.0)
+			if terrain.height_at(p.x, p.z) > p.y - 0.5:
+				blocked = true
+				break
+		if not blocked:
+			break
+		cam.y += 6.0
+	return cam
 
 
 func _photo(delta: float) -> void:

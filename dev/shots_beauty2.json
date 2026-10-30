@@ -1,0 +1,4 @@
+[ {"time": 19.5, "weather": "zlota_mgielka", "drive": 9, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/01_zlota_godzina.png", "frames": 2, "width": 1600},
+  {"time": 20.85, "weather": "pogodnie", "cam": [-3350, 46, -745], "look": [-3444, 30, -835], "out": "/Users/macbookkacper/dev/horyzont/screenshots/03_latarnia_niebieska_godzina.png", "frames": 60, "width": 1600},
+  {"time": 19.7, "weather": "burzowy_zachod", "drive": 7, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/screenshots/06_burzowy_zachod.png", "frames": 2, "width": 1600},
+  {"time": 0.5, "weather": "pogodnie", "drive": 6, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/08_noc.png", "frames": 2, "width": 1600} ]
