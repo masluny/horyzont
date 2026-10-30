@@ -79,11 +79,14 @@ Benchmark: `dev/run.sh 70 -- --bench=15 --time=19.4 --weather=cumulusy`.
 - `--check-only` nie widzi autoloadu `Game` → `dev/check.sh` filtruje te błędy.
 - Tekstura leafy_grass jest beżowa → kolor łąki z palety w shaderze (meadow_color).
 
-## Stan / następne kroki
+## Stan / następne kroki (30.10, 6:40)
 - [x] Niebo, chmury, cykl dnia, pogoda (8 presetów), deszcz, mgła
 - [x] Wyspa, droga, ocean, trawa, auto, kamery (pościg/daleko/maska/kino/foto)
-- [x] UI (menu, HUD, pauza, ustawienia, album), audio proceduralne, pocztówki
-- [ ] Propsy (Grok: murki, latarnia, barierki, głazy, domy) — brief `dev/briefs/props.md`
-- [ ] Chmury: ostrzejsze krawędzie cumulusów; noc: test gwiazd/księżyca na wyspie
-- [ ] Ręczny test jazdy (klawiatura) — sprawdzić prowadzenie auta
-- [ ] Ewentualnie eksport .app (wymaga export templates)
+- [x] UI (menu, HUD, pauza, ustawienia, album, pomoc F1, ekran ładowania), audio, pocztówki
+- [x] Propsy (Grok): murki, głazy, domy, barierki, latarnia z obrotową wiązką
+- [x] Cienie chmur z gęstości 3D, skala renderu 0.58 → 60 fps (p99 < 18 ms) na M4
+- [ ] Ręczny test jazdy na klawiaturze (symulowany test przechodzi) i odsłuch dźwięku
+- [ ] Drzewa (Poly Haven ma za ciężkie modele — trzeba proceduralnych lub impostorów)
+- [ ] Chmury: jeszcze ostrzejsze „kalafiory” cumulonimbusów, cienie chmur na wodzie/trawie
+- [ ] Eksport .app (wymaga export templates, ~1 GB z GitHuba Godota)
+Zrzuty pokazowe: `screenshots/` (generuje `dev/shots_beauty.json`).
