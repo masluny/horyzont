@@ -18,6 +18,7 @@ var _houses: Array[Vector3] = []
 var _lighthouse := Vector3.ZERO
 var _cliff := Vector2(-1.0, 0.0)
 var _pending_cliff := Vector2(-1.0, 0.0)
+var tree_spots: Array[Vector3] = []
 var _stone_count := 0
 var _wall_runs := 0
 var _rail_posts := 0
@@ -574,76 +575,14 @@ func _spawn_buildings(opaque: Acc, glass: Acc) -> void:
 		win.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-var _bark: Acc
-var _leaves: Acc
-
-
 func _add_tree(hint: Vector3) -> void:
-	if _bark == null:
-		_bark = Acc.new()
-		_leaves = Acc.new()
-	# Own stream so canopy detail does not shift walls and houses.
 	var local := RandomNumberGenerator.new()
 	local.seed = int(hash(Vector2(hint.x, hint.z))) ^ SEED
 	var x := hint.x + local.randf_range(-1.5, 1.5)
 	var z := hint.z + local.randf_range(-1.5, 1.5)
-	if _near_road(x, z, 12.0):
+	if _near_road(x, z, 12.0) or _data.height_at(x, z) < 4.0:
 		return
-	var h := _data.height_at(x, z)
-	if h < 4.0:
-		return
-	var base := Vector3(x, h - 0.15, z)
-	var height := local.randf_range(5.4, 8.2)
-	var bend := local.randf_range(1.8, 3.2)
-	var segs := 8
-	var sides := 7
-	var rings: Array[Vector3] = []
-	var radii: Array[float] = []
-	for s in segs + 1:
-		var t := float(s) / float(segs)
-		var center := base + Vector3(bend * t * t, t * height, bend * 0.18 * sin(t * 2.4) * t)
-		rings.append(center)
-		radii.append(lerpf(0.34, 0.05, t))
-	var bark_c := Color(0.16, 0.11, 0.07, 1.0)
-	for s in segs:
-		for i in sides:
-			var a0 := TAU * float(i) / float(sides)
-			var a1 := TAU * float(i + 1) / float(sides)
-			var d0 := Vector3(cos(a0), 0, sin(a0))
-			var d1 := Vector3(cos(a1), 0, sin(a1))
-			var p00 := rings[s] + d0 * radii[s]
-			var p01 := rings[s] + d1 * radii[s]
-			var p11 := rings[s + 1] + d1 * radii[s + 1]
-			var p10 := rings[s + 1] + d0 * radii[s + 1]
-			_bark.add_face(p00, p01, p11, p10, d0 + d1, bark_c)
-	var top := rings[segs]
-	var src: Array = _ico(2)
-	var unit_v: PackedVector3Array = src[0]
-	var unit_f: PackedInt32Array = src[1]
-	var clumps := local.randi_range(8, 11)
-	for c in clumps:
-		var ang := local.randf() * TAU
-		var rad := local.randf_range(0.1, 1.7)
-		var center := top + Vector3(cos(ang) * rad + bend * 0.45, local.randf_range(-1.3, 0.45), sin(ang) * rad * 0.55)
-		var radius := local.randf_range(0.7, 1.35)
-		var g := local.randf_range(0.13, 0.24)
-		var leaf := Color(g * 0.34, g, g * 0.22, 1.0)
-		var verts := unit_v.duplicate()
-		for i in verts.size():
-			var p := verts[i]
-			var n := _value_noise(p * 2.4 + Vector3(float(c) * 1.7, x * 0.01, z * 0.01))
-			var q := p * Vector3(1.0, 0.62, 0.85)
-			verts[i] = center + q * radius * (0.9 + (n - 0.5) * 0.28)
-		_append_faces(_leaves, verts, unit_f, leaf)
-
-
-func _finish_trees() -> void:
-	if _bark == null or _bark.verts.is_empty():
-		return
-	var bark_mi := _add_mesh_child(self, _bark.to_mesh(), _bark_mat, "Trunks", true)
-	bark_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	var leaf_mi := _add_mesh_child(self, _leaves.to_mesh(), _leaf_mat, "Canopy", true)
-	leaf_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	tree_spots.append(Vector3(x, 0.0, z))
 
 
 # --- dry-stone walls ---------------------------------------------------------
@@ -837,7 +776,6 @@ func _build_boulders() -> void:
 			_boulder_sample = pos + nrm * (sy * 0.35)
 			_boulder_sample_s = sy
 	_flush_kind("rock", _rock_meshes, _stone_mat, 340.0, true)
-	_finish_trees()
 
 
 # --- guard rails -------------------------------------------------------------

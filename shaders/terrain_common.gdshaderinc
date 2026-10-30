@@ -6,8 +6,8 @@
 uniform sampler2D heightmap : filter_nearest, repeat_disable;
 
 const float WORLD_SIZE = 10240.0;
-const float TERRAIN_TEXEL = 5.0;
-const int TERRAIN_RES = 2048;
+const float TERRAIN_TEXEL = 2.5;
+const int TERRAIN_RES = 4096;
 
 float terrain_height(vec2 wxz) {
 	vec2 f = (wxz + WORLD_SIZE * 0.5) / TERRAIN_TEXEL - 0.5;

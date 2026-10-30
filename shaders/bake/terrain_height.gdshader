@@ -95,6 +95,12 @@ float island_height(vec2 p) {
 	float valley = 1.0 - 0.55 * exp(-pow((q.y - 1.2) / 0.6, 2.0)) * smoothstep(-0.5, 0.8, q.x);
 	float land = (hills + plateau) * valley + mountains;
 	land *= smoothstep(-0.02, 0.35, s) * 0.6 + 0.4;
+	// Small relief the 2.5 m grid can hold: hummocks and rocky ledges.
+	float inland = smoothstep(0.015, 0.09, s);
+	float hummock = plain_fbm(q * 42.0 + 19.0, 4) * 2.1 + plain_fbm(q * 150.0 + 4.0, 3) * 0.55;
+	float ledge_m = smoothstep(0.1, 0.55, plain_fbm(q * 2.3 + 31.0, 4) + mmask * 0.6 + west * 0.25);
+	float ledges = ridged_fbm(q * 7.5 + 2.0, 6) * 16.0 * ledge_m;
+	land += (hummock + ledges) * inland;
 
 	// Shore profile: sharp cliffs to the west, wide beaches to the east.
 	float edge_w = mix(0.11, 0.009, west);

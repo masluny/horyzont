@@ -1,0 +1,2 @@
+[ {"time": 13.0, "weather": "cumulusy", "drive": 5, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/v_day.png", "frames": 4, "width": 1600},
+  {"time": 19.5, "weather": "zlota_mgielka", "drive": 4, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/v_gold.png", "frames": 4, "width": 1600} ]

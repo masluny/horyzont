@@ -6,12 +6,13 @@ extends Node
 
 signal generated
 
-const SIZE := 2048
+const SIZE := 4096
+const ECO_SIZE := 2048
 const WORLD := 10240.0
 const TEXEL := WORLD / SIZE
 const H_MIN := -200.0
 const H_RANGE := 1000.0
-const CACHE_PATH := "user://cache/terrain_v6.bin"
+const CACHE_PATH := "user://cache/terrain_v7.bin"
 const ROAD_HALF_WIDTH := 3.6
 const ROAD_SHOULDER := 1.8
 const ROAD_STEP := 4.0
@@ -24,6 +25,8 @@ var road_length := 0.0
 var height_texture: ImageTexture
 var normal_texture: ImageTexture
 var mask_texture: ImageTexture
+var eco_texture: ImageTexture
+var eco_image: Image
 var is_ready := false
 
 
@@ -224,6 +227,7 @@ func _carve() -> void:
 	best.fill(1e9)
 	var target := PackedFloat32Array()
 	target.resize(SIZE * SIZE)
+	var touched := PackedInt32Array()
 	var n := road_points.size()
 	var reach_tx := int(ceil(CARVE_REACH / TEXEL)) + 1
 	var half := WORLD * 0.5
@@ -253,11 +257,13 @@ func _carve() -> void:
 				var d := sqrt(dx * dx + dz * dz)
 				var idx := row + x
 				if d < best[idx]:
+					if best[idx] > 1e8:
+						touched.append(idx)
 					best[idx] = d
 					target[idx] = lerpf(a.y, b.y, t)
 		i += 2
 	var flat := ROAD_HALF_WIDTH + ROAD_SHOULDER + 1.2
-	for idx in SIZE * SIZE:
+	for idx in touched:
 		var d := best[idx]
 		if d >= CARVE_REACH:
 			continue
@@ -335,3 +341,40 @@ func _make_textures() -> void:
 		hv.save_png("res://dev/out/terrain_height.png")
 	nimg.generate_mipmaps()
 	normal_texture = ImageTexture.create_from_image(nimg)
+	await _bake_eco()
+
+
+## Where things grow: R grass density, G forest density, B shrubs, A dryness.
+func _bake_eco() -> void:
+	var vp := SubViewport.new()
+	vp.size = Vector2i(ECO_SIZE, ECO_SIZE)
+	vp.use_hdr_2d = true
+	vp.disable_3d = true
+	vp.transparent_bg = true
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var rect := ColorRect.new()
+	rect.size = Vector2(ECO_SIZE, ECO_SIZE)
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/bake/terrain_eco.gdshader")
+	mat.set_shader_parameter("heightmap", height_texture)
+	mat.set_shader_parameter("normalmap", normal_texture)
+	mat.set_shader_parameter("maskmap", mask_texture)
+	rect.material = mat
+	vp.add_child(rect)
+	add_child(vp)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	eco_image = vp.get_texture().get_image()
+	vp.queue_free()
+	eco_image.convert(Image.FORMAT_RGBA8)
+	if Game.args.has("dump_terrain"):
+		eco_image.save_png("res://dev/out/terrain_eco.png")
+	var mipped := eco_image.duplicate()
+	mipped.generate_mipmaps()
+	eco_texture = ImageTexture.create_from_image(mipped)
+
+
+func eco_at(x: float, z: float) -> Color:
+	var px := clampi(int((x + WORLD * 0.5) / WORLD * ECO_SIZE), 0, ECO_SIZE - 1)
+	var pz := clampi(int((z + WORLD * 0.5) / WORLD * ECO_SIZE), 0, ECO_SIZE - 1)
+	return eco_image.get_pixel(px, pz)

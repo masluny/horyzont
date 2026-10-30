@@ -1,0 +1,3 @@
+[ {"time": 13.0, "weather": "cumulusy", "drive": 3, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/v_a.png", "frames": 10, "width": 1600},
+  {"time": 18.4, "weather": "pogodnie", "cam": [1000, 170, 1400], "look": [1500, 120, 1200], "out": "/Users/macbookkacper/dev/horyzont/dev/out/v_b.png", "frames": 30, "width": 1600},
+  {"time": 12.0, "weather": "pogodnie", "cam": [1150, 110, 900], "look": [1300, 90, 980], "out": "/Users/macbookkacper/dev/horyzont/dev/out/v_c.png", "frames": 30, "width": 1600} ]

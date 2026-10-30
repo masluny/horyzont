@@ -4,7 +4,7 @@ shader_type canvas_item;
 render_mode blend_disabled;
 
 uniform sampler2D heightmap : filter_nearest, repeat_disable;
-uniform float texel = 5.0;
+uniform float texel = 2.5;
 
 float h(ivec2 p) {
 	ivec2 s = textureSize(heightmap, 0);
@@ -23,7 +23,7 @@ void fragment() {
 	float wide = 0.0;
 	for (int i = 0; i < 8; i++) {
 		float a = float(i) * 0.785398;
-		wide += h(p + ivec2(round(vec2(cos(a), sin(a)) * 9.0)));
+		wide += h(p + ivec2(round(vec2(cos(a), sin(a)) * 18.0)));
 	}
 	wide = wide / 8.0 - hc;
 	COLOR = vec4(n.x * 0.5 + 0.5, n.z * 0.5 + 0.5, clamp(lap * 0.25 + 0.5, 0.0, 1.0), clamp(wide * 0.02 + 0.5, 0.0, 1.0));

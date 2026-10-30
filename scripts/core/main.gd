@@ -20,9 +20,15 @@ var _sea_timer := 0.0
 var terrain: TerrainData
 var road: RoadBuilder
 var grass: GrassField
+var forest: Forest
 
 
 func _ready() -> void:
+	if Game.args.has("bake_foliage"):
+		var baker := FoliageBaker.new()
+		add_child(baker)
+		baker.run()
+		return
 	Game.world = self
 	_build_environment()
 	sky = SkySystem.new(env)
@@ -84,6 +90,10 @@ func _ready() -> void:
 	props.name = "Props"
 	add_child(props)
 	props.build(terrain, sky)
+	forest = Forest.new()
+	forest.name = "Forest"
+	add_child(forest)
+	await forest.build(terrain, props.tree_spots)
 	car = Car.new()
 	car.name = "Car"
 	car.terrain = terrain
@@ -145,6 +155,11 @@ func _apply_perf_off(what: PackedStringArray, water: Node3D, tr: Node3D) -> void
 			"clouds": sky.dome_material.set_shader_parameter("debug_quality", 2)
 			"scale50": get_viewport().scaling_3d_scale = 0.5
 			"grass": grass.visible = false
+			"radiance64": env.sky.radiance_size = Sky.RADIANCE_SIZE_64
+			"envinc": env.sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
+			"radiance128": env.sky.radiance_size = Sky.RADIANCE_SIZE_128
+			"noupscale": get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+			"noglow": env.glow_enabled = false
 
 
 func apply_quality(q: String) -> void:
@@ -298,16 +313,24 @@ func _process(delta: float) -> void:
 
 
 func _build_terrain_collision() -> void:
+	# Every second row and column: 5 m is plenty for wheels leaving the road.
 	var shape := HeightMapShape3D.new()
-	shape.map_width = TerrainData.SIZE
-	shape.map_depth = TerrainData.SIZE
-	shape.map_data = terrain.heights
+	var n := TerrainData.SIZE / 2
+	var data := PackedFloat32Array()
+	data.resize(n * n)
+	for z in n:
+		var row := z * 2 * TerrainData.SIZE
+		for x in n:
+			data[z * n + x] = terrain.heights[row + x * 2]
+	shape.map_width = n
+	shape.map_depth = n
+	shape.map_data = data
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"
 	body.set_meta("surface", "terrain")
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
-	cs.scale = Vector3(TerrainData.TEXEL, 1.0, TerrainData.TEXEL)
+	cs.scale = Vector3(TerrainData.TEXEL * 2.0, 1.0, TerrainData.TEXEL * 2.0)
 	body.add_child(cs)
 	add_child(body)
 
