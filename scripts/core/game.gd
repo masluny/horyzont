@@ -6,6 +6,8 @@ var world: Node3D
 var sky: SkySystem
 var clock: TimeOfDay
 var weather: Weather
+var terrain: TerrainData
+var car: Node3D
 
 
 func _init() -> void:

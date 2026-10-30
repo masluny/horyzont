@@ -8,7 +8,11 @@ var clock: TimeOfDay
 var weather: Weather
 var sun: DirectionalLight3D
 var moon: DirectionalLight3D
-var camera: Camera3D
+var camera: CameraRig
+var car: Car
+var cinema := false
+var terrain: TerrainData
+var road: RoadBuilder
 
 
 func _ready() -> void:
@@ -32,26 +36,44 @@ func _ready() -> void:
 	Game.clock = clock
 	Game.weather = weather
 
-	camera = Camera3D.new()
-	camera.name = "DevCamera"
-	camera.far = 40000.0
-	camera.near = 0.1
-	camera.fov = 62.0
+	camera = CameraRig.new()
+	camera.name = "Camera"
 	add_child(camera)
 	camera.global_position = Game.vec3_arg("cam", Vector3(0, 3, 0))
 	camera.look_at(Game.vec3_arg("look", Vector3(-100, 8, 0)))
 	camera.make_current()
 
-	var ocean := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(60000, 60000)
-	ocean.mesh = plane
-	var om := StandardMaterial3D.new()
-	om.albedo_color = Color(0.01, 0.025, 0.035)
-	om.roughness = 0.08
-	om.metallic_specular = 0.5
-	ocean.material_override = om
-	add_child(ocean)
+
+	if Game.args.has("stats"):
+		add_child(load("res://dev/terrain_stats.gd").new())
+	terrain = TerrainData.new()
+	terrain.name = "TerrainData"
+	add_child(terrain)
+	Game.terrain = terrain
+	await terrain.generate()
+	var tr := TerrainRenderer.new()
+	tr.name = "Terrain"
+	add_child(tr)
+	tr.setup(terrain, sky)
+	var water := WaterRenderer.new()
+	water.name = "Water"
+	add_child(water)
+	water.setup(terrain, sky)
+	_build_terrain_collision()
+	road = RoadBuilder.new()
+	road.name = "Road"
+	add_child(road)
+	road.build(terrain, sky)
+	car = Car.new()
+	car.name = "Car"
+	car.terrain = terrain
+	add_child(car)
+	car.place_on_road(terrain.nearest_road_index(Vector3(-3200, 0, 600)))
+	camera.target = car
+	camera.terrain = terrain
+	camera.snap()
+	if Game.args.has("cinema"):
+		set_cinema(true)
 
 	if Game.args.has("time"):
 		clock.time = float(Game.arg("time"))
@@ -62,6 +84,42 @@ func _ready() -> void:
 		runner.camera = camera
 		add_child(runner)
 		runner.run(Game.arg("shots"))
+
+
+func set_cinema(on: bool) -> void:
+	cinema = on
+	car.autopilot = on
+	camera.set_mode(CameraRig.Mode.CINEMATIC if on else CameraRig.Mode.CHASE)
+	camera.snap()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.physical_keycode:
+			KEY_C:
+				if not cinema:
+					camera.cycle_mode()
+			KEY_K:
+				set_cinema(not cinema)
+			KEY_T:
+				clock.time_scale = 12.0 if clock.time_scale > 12.0 else 240.0
+	if event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _build_terrain_collision() -> void:
+	var shape := HeightMapShape3D.new()
+	shape.map_width = TerrainData.SIZE
+	shape.map_depth = TerrainData.SIZE
+	shape.map_data = terrain.heights
+	var body := StaticBody3D.new()
+	body.name = "TerrainBody"
+	body.set_meta("surface", "terrain")
+	var cs := CollisionShape3D.new()
+	cs.shape = shape
+	cs.scale = Vector3(TerrainData.TEXEL, 1.0, TerrainData.TEXEL)
+	body.add_child(cs)
+	add_child(body)
 
 
 func _build_environment() -> void:

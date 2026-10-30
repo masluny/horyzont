@@ -1,0 +1,3 @@
+[ {"time": 18.8, "weather": "cumulusy", "out": "/Users/macbookkacper/dev/horyzont/dev/out/t_road.png", "frames": 60},
+  {"time": 14.0, "weather": "cumulusy", "cam": [-2600, 650, 3800], "look": [500, 100, -800], "out": "/Users/macbookkacper/dev/horyzont/dev/out/t_aerial.png", "frames": 60},
+  {"time": 19.6, "weather": "zlota_mgielka", "cam": [-4300, 160, 700], "look": [-1800, 60, -900], "out": "/Users/macbookkacper/dev/horyzont/dev/out/t_coast.png", "frames": 60} ]

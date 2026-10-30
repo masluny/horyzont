@@ -210,4 +210,7 @@ func _update_fog(t_sun: Vector3, mie: float) -> void:
 	horizon = horizon * clampf(sun_strength * 1.5 + 0.02, 0.0, 1.0)
 	horizon = horizon.lerp(Color(0.04, 0.05, 0.09), night)
 	env.fog_light_color = horizon
+	# Lift the shadows in twilight and at night so the land stays readable.
+	var e := sun_elevation_deg()
+	env.ambient_light_energy = 1.0 + 7.0 * smoothstep(3.0, -5.0, e) + 3.0 * smoothstep(-6.0, -12.0, e)
 	env.fog_sun_scatter = clampf(0.08 + (mie - 1.0) * 0.05, 0.0, 0.4) * (1.0 - night)

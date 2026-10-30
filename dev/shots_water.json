@@ -1,0 +1,3 @@
+[ {"time": 19.75, "weather": "zlota_mgielka", "cam": [-4200, 6, 300], "look": [-6000, 4, -900], "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_sunset.png", "frames": 50},
+  {"time": 13.0, "weather": "cumulusy", "cam": [3600, 12, 1800], "look": [3000, 0, 900], "out": "/Users/macbookkacper/dev/horyzont/dev/out/w_beach.png", "frames": 50},
+  {"time": 20.9, "weather": "pogodnie", "drive": 5, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/c_night.png", "frames": 2} ]

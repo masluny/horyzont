@@ -5,7 +5,7 @@ extends Node
 ## Each shot: {"time": 19.5, "weather": "pogodnie", "cam": [x,y,z],
 ##             "look": [x,y,z], "fov": 60, "out": "/abs/path.png", "frames": 40}
 
-var camera: Camera3D
+var camera: CameraRig
 
 
 func run(path: String) -> void:
@@ -24,7 +24,23 @@ func _render(shot: Dictionary) -> void:
 	if shot.has("time"):
 		Game.clock.time = float(shot["time"])
 	Game.clock.paused = true
-	if shot.has("cam") and camera:
+	if shot.has("drive"):
+		# Let the car drive itself for a while, then shoot with the given camera mode.
+		var world = Game.world
+		world.set_cinema(true)
+		if shot.has("road_index"):
+			world.car.place_on_road(int(shot["road_index"]))
+		camera.set_process(true)
+		var mode_name: String = shot.get("mode", "chase")
+		var modes := {"chase": CameraRig.Mode.CHASE, "far": CameraRig.Mode.CHASE_FAR, "bonnet": CameraRig.Mode.BONNET, "cinema": CameraRig.Mode.CINEMATIC}
+		camera.set_mode(modes.get(mode_name, CameraRig.Mode.CHASE))
+		camera.snap()
+		var t_end := Time.get_ticks_msec() + int(float(shot["drive"]) * 1000.0)
+		while Time.get_ticks_msec() < t_end:
+			await get_tree().process_frame
+		print("drive: speed %.1f km/h gear %d rpm %.0f pos %s" % [world.car.speed_kmh, world.car.gear, world.car.rpm, world.car.global_position])
+	elif shot.has("cam") and camera:
+		camera.set_process(false)
 		var c: Array = shot["cam"]
 		var l: Array = shot.get("look", [c[0], c[1], float(c[2]) - 10.0])
 		camera.global_position = Vector3(c[0], c[1], c[2])
