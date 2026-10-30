@@ -65,7 +65,7 @@ Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)
 - `grass_field.gd` + `shaders/grass.gdshader` — kafle źdźbeł (3 LOD). Co klatkę lista widocznych kafli idzie do tekstury-tabeli,
   z której vertex shader czyta pozycję po INSTANCE_ID. Bufory MultiMesh się nie zmieniają, więc motion vectors są poprawne.
   `shaders/meadow_decor.gdshader` — kłosy (skan) i kwiaty na tej samej tabeli.
-- `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~200 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
+- `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~170 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
   impostory od 74 m (8 widoków na wariant, wypiekane przy starcie z tych samych siatek). Cienie: LOD1 do 42 m, bryły do 125 m.
 - `props.gd` — murki, domy, barierki, latarnia, skanowane głazy i pnie (`assets/models/baked`), paprocie przy drodze.
 - `road_builder.gd`, `shaders/road.gdshader`, `rain.gd`.
@@ -89,12 +89,14 @@ Pomiary w oknie 2940×1658, skala 0.58, trasa otwarta / las (ms na klatkę, śre
 - Wysoka (MetalFX Temporal): 21,9 / 25,0 ms, czyli 46 / 40 fps.
 - Średnia (MetalFX Spatial + SMAA): 15,4 / 18,5 ms, czyli 65 / 54 fps.
 - Niska: 12,8 / 16,7 ms, czyli 78 / 60 fps.
+Prawdziwy pełny ekran 2940×1846, las, Wysoka, na baterii: 26,4 ms, czyli 38 fps.
 MetalFX Temporal kosztuje około 6 ms ponad bilinear, TAA z MetalFX Spatial około 3 ms.
 Uwaga: ławka i zrzuty muszą wołać `apply_quality`, inaczej lecą bez MetalFX (bilinear). Nocne „60 fps” z 30.10 było takim błędem.
 Air przy ciągłym obciążeniu zwalnia o kilka ms, między pomiarami trzeba robić przerwy.
 Przy szukaniu kosztów: `--perf_off=trees,grass,clouds,ssr,ssao,glow,shadow,treeshadow,impostors,sharpen`, a ławka w konkretnym
 miejscu: `dev/run.sh 60 -- --bench=6 --mode=chase --uncapped --road_near=3200,0,1600 --time=13 --weather=cumulusy`.
-Pomiary mają sens tylko gdy nic innego nie używa GPU.
+Pomiary mają sens tylko gdy nic innego nie używa GPU: przed ławką `pgrep -x Godot` musi być puste. 30.10 wieczorem wyszło 61 ms, bo obok działała gra z `Horyzont.app`.
+Średnia i Niska nie mają TAA ani SSR: dither liści i LOD widać jako kropki na koronach, a chmury mają smugi. `user://settings.cfg` nadpisuje domyślny preset z `settings.gd`.
 
 ## Lekcje (cd.)
 - Gęstość mgły Godota: ~12× „podręcznikowej” (mnożnik w weather.gd).
@@ -106,6 +108,7 @@ Pomiary mają sens tylko gdy nic innego nie używa GPU.
 - MultiMesh bez ustawionych transformacji ma macierze zerowe: nawet przy własnych pozycjach trzeba wpisać Identity.
 - Przy interpolacji mapy ekosystemu liczy się rozdzielczość: 5 m/texel wynosiło trawę na asfalt, stąd 2,5 m i próg w shaderze.
 - Dwie warstwy przenikania LOD muszą używać przeciwnych końców tego samego szumu, inaczej zostają dziury.
+- Kadr impostora bierz z wierzchołków, nie z nominalnej wysokości: korona wystaje ponad `_height` i traciła czubek. Górne 3,5% komórki shader odrzuca, bo mipy wchodzą tam w pień z rzędu wyżej.
 
 ## Stan / następne kroki (30.10, wieczór)
 - [x] Niebo, chmury (kopuły, półrozdzielczość), cykl dnia, pogoda, deszcz, mgła

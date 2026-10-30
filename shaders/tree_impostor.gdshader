@@ -52,6 +52,10 @@ void fragment() {
 	if (v_fade < ign) {
 		discard;
 	}
+	// Mips reach past the cell edge into the trunk of the tree baked in the row above.
+	if (UV.y < 0.035) {
+		discard;
+	}
 	float view = floor(v_view + ign);
 	view = mod(view, views);
 	vec2 uv = (vec2(view, v_row) + UV) / vec2(views, rows);

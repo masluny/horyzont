@@ -66,13 +66,18 @@ func _make(species: String, seed_value: int) -> Dictionary:
 	var aabb_r := 0.0
 	for c in _cards:
 		aabb_r = maxf(aabb_r, Vector2(c["p"].x, c["p"].z).length())
+	# The crown and its cards reach past the nominal height, and impostors are framed by this.
+	var top := 0.0
+	for buffer: MeshBuffer in [bark_a, leaf_a]:
+		for p: Vector3 in buffer.verts:
+			top = maxf(top, p.y)
 	if Game.args.has("tree_stats"):
 		print("tree %s: %d m, bark %d/%d v, leaves %d/%d v" % [species, int(_height), bark_a.verts.size(), bark_b.verts.size(), leaf_a.verts.size(), leaf_b.verts.size()])
 	return {
 		"lod0": _commit(bark_a, leaf_a),
 		"lod1": _commit(bark_b, leaf_b),
 		"blobs": blobs,
-		"height": _height + 1.5,
+		"height": top * 1.05 + 0.3,
 		"radius": aabb_r + 2.0,
 		"trunk": trunk_r,
 	}
