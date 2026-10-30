@@ -213,4 +213,7 @@ func _update_fog(t_sun: Vector3, mie: float) -> void:
 	# Lift the shadows in twilight and at night so the land stays readable.
 	var e := sun_elevation_deg()
 	env.ambient_light_energy = 1.0 + 6.0 * smoothstep(3.0, -5.0, e) - 1.5 * smoothstep(-7.0, -14.0, e)
+	# A share of the ambient is sunlight bounced off the land, not blue sky.
+	var bounce := Color(t_sun.x, t_sun.y, t_sun.z) * sun_strength * Color(0.52, 0.56, 0.36)
+	env.ambient_light_color = bounce
 	env.fog_sun_scatter = clampf(0.08 + (mie - 1.0) * 0.05, 0.0, 0.4) * (1.0 - night)

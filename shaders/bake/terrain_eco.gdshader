@@ -57,7 +57,7 @@ void fragment() {
 	float grass = smoothstep(0.7, 0.84, ny) * smoothstep(4.0, 7.0, h) * (1.0 - smoothstep(460.0, 620.0, h));
 	grass *= 1.0 - smoothstep(0.62, 0.96, road * 1.2 + (vnoise(p * 0.7) - 0.5) * 0.3);
 	grass *= smoothstep(0.1, 0.34, fbm(p / 36.0 + 5.0, 4) + 0.28 * ny);
-	grass *= 1.0 - forest * 0.5;
+	grass *= 1.0 - forest * 0.22;
 
 	float dry = clamp(fbm(p / 900.0 + 8.0, 4) * 1.5 - 0.42 + (nm.a - 0.5) * 0.9 + west * 0.12, 0.0, 1.0);
 	COLOR = vec4(grass, forest, shrub, dry);

@@ -99,7 +99,7 @@ float island_height(vec2 p) {
 	float inland = smoothstep(0.015, 0.09, s);
 	float hummock = plain_fbm(q * 42.0 + 19.0, 4) * 2.1 + plain_fbm(q * 150.0 + 4.0, 3) * 0.55;
 	float ledge_m = smoothstep(0.1, 0.55, plain_fbm(q * 2.3 + 31.0, 4) + mmask * 0.6 + west * 0.25);
-	float ledges = ridged_fbm(q * 7.5 + 2.0, 6) * 16.0 * ledge_m;
+	float ledges = ridged_fbm(q * 7.5 + 2.0, 6) * 6.0 * ledge_m * ledge_m;
 	land += (hummock + ledges) * inland;
 
 	// Shore profile: sharp cliffs to the west, wide beaches to the east.

@@ -17,7 +17,7 @@ float tree_fade(float d) {
 		return 1.0;
 	}
 	float a = smoothstep(lod_r0 - 9.0, lod_r0, d);
-	return lod_kind == 0 ? 1.0 - a : a * (1.0 - smoothstep(lod_r1 - 26.0, lod_r1, d));
+	return lod_kind == 0 ? 1.0 - a : a * (1.0 - smoothstep(lod_r1 - 20.0, lod_r1, d));
 }
 
 // Writes the instance placement and wind into position, normal and tangent.

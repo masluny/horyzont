@@ -15,6 +15,9 @@ const SPECIES := {
 	"olive": {"atlas": "olive", "bark": "bark_brown_02", "h": [6.0, 8.5], "bole": 0.2, "n1": [6, 8], "len1": 0.62,
 		"ang1": [0.75, 1.15], "n2": [4, 6], "len2": 0.6, "ang2": [0.6, 1.0], "n3": [4, 5], "len3": 0.62, "gnarl": 0.85,
 		"up": 0.08, "radius": 0.042, "card": [1.05, 1.55], "spacing": 0.3, "shape": "dome"},
+	"bush": {"atlas": "round", "bark": "bark_brown_02", "h": [2.0, 3.4], "bole": 0.03, "n1": [6, 8], "len1": 0.85,
+		"ang1": [0.35, 0.95], "n2": [4, 5], "len2": 0.6, "ang2": [0.5, 0.9], "n3": [0, 0], "len3": 0.0, "gnarl": 0.6,
+		"up": 0.2, "radius": 0.022, "card": [0.8, 1.2], "spacing": 0.26, "shape": "dome"},
 	"pine": {"atlas": "pine", "bark": "pine_bark", "h": [16.0, 23.0], "bole": 0.6, "n1": [12, 16], "len1": 0.33,
 		"ang1": [1.05, 1.4], "n2": [4, 6], "len2": 0.6, "ang2": [0.5, 0.85], "n3": [0, 0], "len3": 0.0, "gnarl": 0.3,
 		"up": 0.2, "radius": 0.021, "card": [1.45, 2.1], "spacing": 0.34, "shape": "umbrella"},
@@ -57,8 +60,9 @@ func _make(species: String, seed_value: int) -> Dictionary:
 	_crown_radius = Vector3(width, crown_h * 0.6, width)
 	var trunk_r: float = _height * float(_p["radius"])
 	var lean := Vector3(_rng.randf_range(-0.12, 0.12), 1.0, _rng.randf_range(-0.12, 0.12)).normalized()
-	_grow(Vector3.ZERO, lean, _height, trunk_r, 0, 0.0)
+	_grow(Vector3.ZERO, lean, _height, trunk_r, 0, 0.0, 0)
 	_place_cards()
+	var blobs := _shadow_blobs()
 	var aabb_r := 0.0
 	for c in _cards:
 		aabb_r = maxf(aabb_r, Vector2(c["p"].x, c["p"].z).length())
@@ -67,13 +71,14 @@ func _make(species: String, seed_value: int) -> Dictionary:
 	return {
 		"lod0": _commit(bark_a, leaf_a),
 		"lod1": _commit(bark_b, leaf_b),
+		"blobs": blobs,
 		"height": _height + 1.5,
 		"radius": aabb_r + 2.0,
 		"trunk": trunk_r,
 	}
 
 
-func _grow(start: Vector3, dir: Vector3, length: float, radius: float, level: int, flex0: float) -> void:
+func _grow(start: Vector3, dir: Vector3, length: float, radius: float, level: int, flex0: float, group: int) -> void:
 	var segs: int = [12, 7, 5, 3][level]
 	var pts: Array[Vector3] = [start]
 	var rad: Array[float] = [radius]
@@ -96,7 +101,7 @@ func _grow(start: Vector3, dir: Vector3, length: float, radius: float, level: in
 	var flex_end: float = flex0 + float([0.16, 0.34, 0.3, 0.2][level])
 	_tube(pts, rad, level, flex0, flex_end, phase)
 	if level >= _max_level - 1:
-		_cards.append({"p": pts[segs], "d": d, "flex": flex_end, "phase": phase, "len": length, "pts": pts, "tip": level == _max_level})
+		_cards.append({"p": pts[segs], "d": d, "flex": flex_end, "phase": phase, "len": length, "pts": pts, "tip": level == _max_level, "group": group})
 	if level == _max_level:
 		return
 	var key := "n%d" % (level + 1)
@@ -117,7 +122,7 @@ func _grow(start: Vector3, dir: Vector3, length: float, radius: float, level: in
 		var child_dir := seg_dir.rotated(side, pitch).normalized()
 		var len_k: float = _p["len%d" % (level + 1)]
 		var child_len := length * len_k * _crown_shape(t, level) * _rng.randf_range(0.8, 1.15)
-		_grow(at, child_dir, child_len, r_at * (0.62 if level == 0 else 0.68), level + 1, lerpf(flex0, flex_end, t))
+		_grow(at, child_dir, child_len, r_at * (0.62 if level == 0 else 0.68), level + 1, lerpf(flex0, flex_end, t), i if level == 0 else group)
 
 
 func _crown_shape(t: float, level: int) -> float:
@@ -249,6 +254,61 @@ func _card(at: Vector3, dir: Vector3, size: float, flex: float, phase: float, lo
 		for c in cols - 1:
 			var a := base + r * cols + c
 			buf.idx.append_array([a, a + 1, a + cols, a + 1, a + cols + 1, a + cols])
+
+
+## Shadow caster for trees further away: one lumpy solid per main branch plus the
+## trunk, cheap enough to draw into every shadow cascade.
+func _shadow_blobs() -> ArrayMesh:
+	var groups := {}
+	for c in _cards:
+		if not groups.has(c["group"]):
+			groups[c["group"]] = []
+		groups[c["group"]].append(c["p"])
+	var buf := MeshBuffer.new()
+	var t := (1.0 + sqrt(5.0)) * 0.5
+	var ico: Array[Vector3] = [Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0),
+		Vector3(0, -1, t), Vector3(0, 1, t), Vector3(0, -1, -t), Vector3(0, 1, -t),
+		Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1)]
+	var faces := [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+		3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1]
+	for key in groups:
+		var pts: Array = groups[key]
+		var lo := Vector3(INF, INF, INF)
+		var hi := -lo
+		for p in pts:
+			lo = lo.min(p)
+			hi = hi.max(p)
+		var center := (lo + hi) * 0.5
+		var half := ((hi - lo) * 0.5 + Vector3.ONE * 0.7) * 0.62
+		var base := buf.verts.size()
+		for v in ico:
+			buf.verts.append(center + v.normalized() * half)
+			buf.normals.append(v.normalized())
+			buf.tangents.append_array([1.0, 0.0, 0.0, 1.0])
+			buf.uvs.append(Vector2.ZERO)
+			buf.uv2.append(Vector2.ZERO)
+			buf.colors.append(Color(1, 1, 1, 0.2))
+		for f in faces:
+			buf.idx.append(base + f)
+	# Trunk as a tall thin box.
+	var r := _height * float(_p["radius"]) * 1.1
+	var base2 := buf.verts.size()
+	for k in 8:
+		var y := 0.0 if k < 4 else _height * 0.7
+		var a := PI * 0.5 * (k % 4) + 0.78
+		buf.verts.append(Vector3(cos(a) * r, y, sin(a) * r))
+		buf.normals.append(Vector3(cos(a), 0, sin(a)))
+		buf.tangents.append_array([1.0, 0.0, 0.0, 1.0])
+		buf.uvs.append(Vector2.ZERO)
+		buf.uv2.append(Vector2.ZERO)
+		buf.colors.append(Color(1, 1, 1, 0.0))
+	for k in 4:
+		var a := base2 + k
+		var b := base2 + (k + 1) % 4
+		buf.idx.append_array([a, a + 4, b, b, a + 4, b + 4])
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, buf.arrays())
+	return m
 
 
 func _commit(bark: MeshBuffer, leaf: MeshBuffer) -> ArrayMesh:

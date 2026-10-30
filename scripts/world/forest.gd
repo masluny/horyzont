@@ -5,16 +5,20 @@ extends Node3D
 ## buffers never change and motion vectors stay correct); far trees are impostor
 ## quads baked here at startup from the same meshes.
 
-const VARIANTS: Array[String] = ["oak", "oak", "oak", "round", "round", "round", "olive", "olive", "pine", "pine", "pine", "pine"]
+const VARIANTS: Array[String] = ["oak", "oak", "oak", "round", "round", "round", "olive", "olive", "pine", "pine", "pine", "pine", "bush", "bush", "bush"]
+const FIRST_BUSH := 12
 const CELL := 60.0
 const TABLE_WIDTH := 512
 const IMPOSTOR_VIEWS := 8
 const IMPOSTOR_SIZE := 256
 const BODY_POOL := 14
 
-@export var lod_r0 := 64.0
-@export var lod_r1 := 230.0
-@export var shadow_range := 210.0
+const ROWS_PER_VARIANT := 4
+
+@export var lod_r0 := 46.0
+@export var lod_r1 := 120.0
+@export var shadow_near := 58.0
+@export var shadow_range := 140.0
 
 var tree_count := 0
 
@@ -60,9 +64,10 @@ func _make_materials() -> void:
 		"round": [Vector3(0.36, 0.48, 0.23), Vector3(0.26, 0.4, 0.17)],
 		"olive": [Vector3(0.42, 0.47, 0.36), Vector3(0.33, 0.38, 0.29)],
 		"pine": [Vector3(0.42, 0.52, 0.36), Vector3(0.32, 0.43, 0.29)],
+		"bush": [Vector3(0.3, 0.42, 0.2), Vector3(0.24, 0.36, 0.14)],
 	}
-	_table_data.resize(TABLE_WIDTH * VARIANTS.size() * 3 * 4)
-	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * 3, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())
+	_table_data.resize(TABLE_WIDTH * VARIANTS.size() * ROWS_PER_VARIANT * 4)
+	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * ROWS_PER_VARIANT, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())
 	_table_tex = ImageTexture.create_from_image(_table)
 	for species in TreeGen.SPECIES:
 		var p: Dictionary = TreeGen.SPECIES[species]
@@ -118,6 +123,23 @@ func _scatter(extra: Array[Vector3]) -> void:
 			if h < 5.5:
 				continue
 			_add(x, h, z, _pick(x, z, h, lone, rng), rng.randf_range(0.72, 1.18))
+	# Bushes on the open slopes and as undergrowth in the woods.
+	var bush_spacing := 11.0
+	var bush_steps := int(TerrainData.WORLD / bush_spacing)
+	for gz in bush_steps:
+		for gx in bush_steps:
+			var x := (gx + 0.5) * bush_spacing - half + rng.randf_range(-4.5, 4.5)
+			var z := (gz + 0.5) * bush_spacing - half + rng.randf_range(-4.5, 4.5)
+			var px := clampi(int((x + half) / texel), 0, size - 1)
+			var pz := clampi(int((z + half) / texel), 0, size - 1)
+			var i := (pz * size + px) * 4
+			var keep := eco[i + 2] / 255.0 * 0.62 + eco[i + 1] / 255.0 * 0.55
+			if rng.randf() >= keep:
+				continue
+			var h := _data.height_at(x, z)
+			if h < 5.0:
+				continue
+			_add(x, h, z, FIRST_BUSH + rng.randi_range(0, 2), rng.randf_range(0.6, 1.3))
 	for p in extra:
 		var h := _data.height_at(p.x, p.z)
 		_add(p.x, h, p.z, 6 if rng.randf() < 0.5 else 0, rng.randf_range(0.8, 1.05))
@@ -156,8 +178,12 @@ func _add(x: float, h: float, z: float, variant: int, scale_k: float) -> void:
 
 
 func _build_layers() -> void:
-	var rows := VARIANTS.size() * 3
+	var rows := VARIANTS.size() * ROWS_PER_VARIANT
 	_counts.resize(rows)
+	var blob_mat := ShaderMaterial.new()
+	blob_mat.shader = preload("res://shaders/tree_shadow.gdshader")
+	blob_mat.set_shader_parameter("tree_table", _table_tex)
+	blob_mat.set_shader_parameter("lod_kind", 2)
 	var identity := PackedFloat32Array()
 	identity.resize(TABLE_WIDTH * 12)
 	for i in TABLE_WIDTH:
@@ -166,10 +192,15 @@ func _build_layers() -> void:
 		identity[i * 12 + 10] = 1.0
 	for v in VARIANTS.size():
 		var species := VARIANTS[v]
-		for lod in 3:
-			var mesh: ArrayMesh = (_meshes[v]["lod0"] if lod == 0 else _meshes[v]["lod1"]).duplicate()
-			mesh.surface_set_material(0, _bark_mats["%s%d" % [species, lod]])
-			mesh.surface_set_material(1, _leaf_mats["%s%d" % [species, lod]])
+		for lod in ROWS_PER_VARIANT:
+			var mesh: ArrayMesh
+			if lod == 3:
+				mesh = _meshes[v]["blobs"]
+				mesh.surface_set_material(0, blob_mat)
+			else:
+				mesh = (_meshes[v]["lod0"] if lod == 0 else _meshes[v]["lod1"]).duplicate()
+				mesh.surface_set_material(0, _bark_mats["%s%d" % [species, lod]])
+				mesh.surface_set_material(1, _leaf_mats["%s%d" % [species, lod]])
 			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
 			mm.mesh = mesh
@@ -179,8 +210,8 @@ func _build_layers() -> void:
 			var inst := MultiMeshInstance3D.new()
 			inst.multimesh = mm
 			inst.custom_aabb = AABB(Vector3(-8000, -300, -8000), Vector3(16000, 1400, 16000))
-			inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if lod == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			inst.set_instance_shader_parameter("table_row", v * 3 + lod)
+			inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if lod >= 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			inst.set_instance_shader_parameter("table_row", v * ROWS_PER_VARIANT + lod)
 			add_child(inst)
 			_layers.append(inst)
 
@@ -188,7 +219,8 @@ func _build_layers() -> void:
 func _build_impostors() -> void:
 	var rows := VARIANTS.size()
 	var vp := SubViewport.new()
-	vp.size = Vector2i(IMPOSTOR_VIEWS * IMPOSTOR_SIZE, rows * IMPOSTOR_SIZE)
+	var vp_size := Vector2i(IMPOSTOR_VIEWS * IMPOSTOR_SIZE, rows * IMPOSTOR_SIZE)
+	vp.size = vp_size
 	vp.own_world_3d = true
 	vp.transparent_bg = true
 	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -265,7 +297,8 @@ func _build_impostors() -> void:
 	mat.set_shader_parameter("atlas_normal", textures[1])
 	mat.set_shader_parameter("rows", float(rows))
 	mat.set_shader_parameter("views", float(IMPOSTOR_VIEWS))
-	mat.set_shader_parameter("fade_near", lod_r1 - 26.0)
+	mat.set_shader_parameter("atlas_size", Vector2(vp_size))
+	mat.set_shader_parameter("fade_near", lod_r1 - 20.0)
 	mat.set_shader_parameter("fade_far", lod_r1)
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -355,15 +388,17 @@ func _refresh(pos: Vector3, dir: Vector3, fov: float) -> void:
 				if d > reach:
 					continue
 				var v := int(_v[i])
-				var row := v * 3
+				var row := v * ROWS_PER_VARIANT
 				var in_view := looking_down or d < 18.0 or (dx * flat.x + dz * flat.y) / d > cone_cos
 				if in_view and d < r0:
 					_write(row, i, row_width)
 				if in_view and d > r0_in and d < r1:
 					_write(row + 1, i, row_width)
-				if d < shadow_range:
+				if d < shadow_near:
 					_write(row + 2, i, row_width)
-	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * 3, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())
+				elif d < shadow_range and v < FIRST_BUSH:
+					_write(row + 3, i, row_width)
+	_table = Image.create_from_data(TABLE_WIDTH, VARIANTS.size() * ROWS_PER_VARIANT, false, Image.FORMAT_RGBAF, _table_data.to_byte_array())
 	_table_tex.update(_table)
 	for r in _layers.size():
 		_layers[r].multimesh.visible_instance_count = _counts[r]
@@ -394,7 +429,7 @@ func _place_bodies(at: Vector3) -> void:
 				var dx := _x[i] - at.x
 				var dz := _z[i] - at.z
 				var d2 := dx * dx + dz * dz
-				if d2 < 2500.0:
+				if d2 < 2500.0 and int(_v[i]) < FIRST_BUSH:
 					near.append([d2, i])
 	near.sort_custom(func(a, b): return a[0] < b[0])
 	for b in _bodies.size():

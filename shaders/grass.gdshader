@@ -5,6 +5,7 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_lambert, specular_schlick_ggx;
 
 #include "res://shaders/terrain_common.gdshaderinc"
+#include "res://shaders/cloud_shadow.gdshaderinc"
 
 uniform sampler2D eco_map : filter_linear, repeat_disable;
 uniform sampler2D wind_noise : filter_linear_mipmap, repeat_enable;
@@ -23,7 +24,7 @@ varying float tip;
 varying float side_u;
 varying vec3 base_col;
 varying vec3 v_normal;
-varying float cloud_light;
+varying float v_cloud;
 
 // Fraction of blades alive at a distance; the survivors widen to compensate.
 float blade_density(float d) {
@@ -88,6 +89,7 @@ void vertex() {
 	float toward_ground = mix(0.45, 0.9, smoothstep(6.0, mid_radius, d));
 	v_normal = normalize(mix(blade_n, ground_n, toward_ground));
 
+	v_cloud = cloud_shadow(root);
 	tip = t;
 	side_u = side;
 	float dry = clamp(eco.a * 0.95 + (COLOR.g - 0.5) * 0.42 + (patchy - 0.5) * 0.6 + (tuft - 0.5) * 0.5, 0.0, 1.0);
@@ -113,8 +115,9 @@ void light() {
 	float wrap = clamp((ndl + 0.4) / 1.4, 0.0, 1.0);
 	// Light through the blade when looking towards the sun.
 	float through = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 2.6) * smoothstep(0.1, 0.7, tip);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (wrap + through * vec3(1.0, 1.25, 0.5)) / PI;
+	float shadow = ATTENUATION * (LIGHT_IS_DIRECTIONAL ? v_cloud : 1.0);
+	DIFFUSE_LIGHT += LIGHT_COLOR * shadow * (wrap + through * vec3(1.0, 1.25, 0.5)) / PI;
 	vec3 hv = normalize(VIEW + LIGHT);
 	float ndh = clamp(dot(NORMAL, hv), 0.0, 1.0);
-	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * pow(ndh, 24.0) * 0.1 * (1.0 - ROUGHNESS);
+	SPECULAR_LIGHT += LIGHT_COLOR * shadow * pow(ndh, 24.0) * 0.1 * (1.0 - ROUGHNESS);
 }

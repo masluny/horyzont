@@ -1,12 +1,13 @@
 // Visible sky, drawn on an opaque camera-centred dome so it gets motion vectors
-// and temporal accumulation (MetalFX / TAA) like the rest of the frame.
+// and temporal accumulation (MetalFX / TAA) like the rest of the frame. The soft
+// sky and clouds come from a half-resolution pass; only the sun, moon and stars
+// are computed here at full resolution.
 shader_type spatial;
 render_mode unshaded, cull_front, fog_disabled, shadows_disabled, depth_draw_opaque;
 
 #include "res://shaders/sky_common.gdshaderinc"
 
-global uniform float frame_jitter;
-uniform int debug_quality = 1;
+uniform sampler2D sky_lowres : filter_linear, repeat_disable;
 
 varying vec3 world_pos;
 
@@ -16,8 +17,7 @@ void vertex() {
 
 void fragment() {
 	vec3 rd = normalize(world_pos - CAMERA_POSITION_WORLD);
-	vec2 px = FRAGCOORD.xy + frame_jitter * vec2(47.0, 17.0);
-	float ign = fract(52.9829189 * fract(dot(px, vec2(0.06711056, 0.00583715))));
 	float px_angle = 2.0 / (VIEWPORT_SIZE.y * PROJECTION_MATRIX[1][1]);
-	ALBEDO = render_sky(rd, CAMERA_POSITION_WORLD, ign, px_angle, debug_quality);
+	vec4 low = texture(sky_lowres, SCREEN_UV);
+	ALBEDO = low.rgb + sky_bodies(rd, CAMERA_POSITION_WORLD, px_angle) * low.a;
 }

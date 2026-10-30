@@ -43,6 +43,9 @@ var _white_mat: StandardMaterial3D
 
 var _stone_meshes: Array[ArrayMesh] = []
 var _rock_meshes: Array[ArrayMesh] = []
+var _rock_scale: Array[float] = []
+var _log_meshes: Array[ArrayMesh] = []
+var _log_scale: Array[float] = []
 var _ico_cache: Array = []
 
 var _glow := 0.0
@@ -61,12 +64,13 @@ func build(data: TerrainData, _sky: SkySystem) -> void:
 	var t0 := Time.get_ticks_msec()
 	_make_materials()
 	_stone_meshes = _make_stone_meshes()
-	_rock_meshes = _make_rock_meshes()
+	_load_scanned_rocks()
 	_index_road()
 	_build_lighthouse()
 	_build_houses()
 	_build_walls()
 	_build_boulders()
+	_build_verge_stones()
 	_build_rails()
 	_update_shadows()
 	if Game.clock:
@@ -723,9 +727,9 @@ func _lay_stones(pts: Array[Vector3]) -> void:
 # --- boulders ----------------------------------------------------------------
 
 func _build_boulders() -> void:
-	var target := 880
+	var target := 1500
 	var tries := 0
-	while _boulder_count < target and tries < 26000:
+	while _boulder_count < target and tries < 40000:
 		tries += 1
 		var ang := _rng.randf() * TAU
 		var rad := _rng.randf_range(600.0, 4900.0)
@@ -752,9 +756,9 @@ func _build_boulders() -> void:
 			continue
 		if _near_road(x, z, 14.0) or _near_house(x, z, 16.0):
 			continue
-		var sy := _rng.randf_range(0.45, 2.6)
-		if _rng.randf() < 0.72:
-			sy = _rng.randf_range(0.45, 1.4)
+		var sy := _rng.randf_range(1.2, 5.5)
+		if _rng.randf() < 0.7:
+			sy = _rng.randf_range(0.6, 2.0)
 		var sx := sy * _rng.randf_range(0.75, 1.4)
 		var sz := sy * _rng.randf_range(0.7, 1.35)
 		var y_axis := nrm
@@ -765,9 +769,9 @@ func _build_boulders() -> void:
 		var z_axis := x_axis.cross(y_axis).normalized()
 		var b := Basis(x_axis, y_axis, z_axis)
 		b *= Basis.from_euler(Vector3(_rng.randf_range(-0.15, 0.15), _rng.randf() * TAU, _rng.randf_range(-0.15, 0.15)))
-		b = b.scaled(Vector3(sx, sy, sz))
-		var pos := Vector3(x, h, z) - nrm * (sy * 0.16)
 		var variant := _rng.randi() % _rock_meshes.size()
+		b = b.scaled(Vector3(sx, sy, sz) * _rock_scale[variant])
+		var pos := Vector3(x, h, z) - nrm * (sy * 0.22)
 		var moss := _rng.randf_range(0.45, 1.0) if coastal else _rng.randf_range(0.15, 0.7)
 		var col := Color(_rng.randf_range(0.2, 0.45), _rng.randf_range(0.08, 0.32), moss, _rng.randf())
 		_add_inst("rock", x, z, variant, Transform3D(b, pos), col)
@@ -775,7 +779,48 @@ func _build_boulders() -> void:
 		if coastal and h > 10.0 and h < 55.0 and sy > _boulder_sample_s:
 			_boulder_sample = pos + nrm * (sy * 0.35)
 			_boulder_sample_s = sy
-	_flush_kind("rock", _rock_meshes, _stone_mat, 340.0, true)
+	_flush_kind("rock", _rock_meshes, null, 420.0, true)
+
+
+## Stones in the verge and fallen wood near the road: small things that give the
+## eye something to catch on at driving speed.
+func _build_verge_stones() -> void:
+	var n := _data.road_points.size()
+	var small: Array[int] = [0, 1]
+	var stones := 0
+	var logs := 0
+	var i := 0
+	while i < n:
+		i += _rng.randi_range(1, 4)
+		var f := _frame(i)
+		var p: Vector3 = f[0]
+		var right: Vector3 = f[2]
+		var side := -1.0 if _rng.randf() < 0.5 else 1.0
+		var dist := _rng.randf_range(6.5, 26.0)
+		var at := p + right * side * dist + Vector3(f[1]) * _rng.randf_range(-3.0, 3.0)
+		var h := _data.height_at(at.x, at.z)
+		if h < 1.5 or _near_road(at.x, at.z, 5.8) or _near_house(at.x, at.z, 10.0):
+			continue
+		var nrm := _data.normal_at(at.x, at.z)
+		var x_axis := Vector3.UP.cross(nrm)
+		x_axis = x_axis.normalized() if x_axis.length_squared() > 1e-4 else Vector3.RIGHT
+		var b := Basis(x_axis, nrm, x_axis.cross(nrm).normalized())
+		b *= Basis(Vector3.UP, _rng.randf() * TAU)
+		var eco := _data.eco_at(at.x, at.z)
+		if eco.g > 0.4 and _rng.randf() < 0.1:
+			var v := _rng.randi() % _log_meshes.size()
+			var size := _rng.randf_range(2.5, 5.0)
+			_add_inst("log", at.x, at.z, v, Transform3D(b.scaled(Vector3.ONE * size * _log_scale[v]), Vector3(at.x, h, at.z)), Color.WHITE)
+			logs += 1
+			continue
+		var v := small[_rng.randi() % small.size()]
+		var size := _rng.randf_range(0.28, 0.95) * (2.0 if _rng.randf() < 0.1 else 1.0)
+		var pos := Vector3(at.x, h - size * 0.12, at.z)
+		_add_inst("rock", at.x, at.z, v, Transform3D(b.scaled(Vector3.ONE * size * _rock_scale[v]), pos), Color.WHITE)
+		stones += 1
+	_flush_kind("rock", _rock_meshes, null, 260.0, true)
+	_flush_kind("log", _log_meshes, null, 240.0, true)
+	print("props: verge stones %d, logs %d" % [stones, logs])
 
 
 # --- guard rails -------------------------------------------------------------
@@ -1002,7 +1047,8 @@ func _commit_mm(mesh: Mesh, xforms: Array, cols: Array, mat: Material, vis: floa
 	mm.custom_aabb = aabb
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
-	inst.material_override = mat
+	if mat:
+		inst.material_override = mat
 	inst.custom_aabb = aabb
 	inst.visibility_range_end = vis
 	inst.visibility_range_end_margin = 36.0
@@ -1035,20 +1081,22 @@ func _update_shadows() -> void:
 
 # --- meshes ------------------------------------------------------------------
 
+func _load_scanned_rocks() -> void:
+	for id in ["stone_01", "rock_07", "rock_09", "boulder_01", "rock_face_01", "rock_face_02", "namaqualand_boulder_02"]:
+		var m: ArrayMesh = load("res://assets/models/baked/%s.res" % id)
+		_rock_meshes.append(m)
+		_rock_scale.append(1.0 / maxf(m.get_aabb().size.y, 0.01))
+	for id in ["tree_stump_01", "dead_tree_trunk"]:
+		var m: ArrayMesh = load("res://assets/models/baked/%s.res" % id)
+		_log_meshes.append(m)
+		_log_scale.append(1.0 / maxf(m.get_aabb().get_longest_axis_size(), 0.01))
+
+
 func _make_stone_meshes() -> Array[ArrayMesh]:
 	var out: Array[ArrayMesh] = []
 	out.append(_jitter_box(Vector3(0.60, 0.64, 0.90), 0.045, 11))
 	out.append(_jitter_box(Vector3(0.66, 0.58, 0.76), 0.04, 29))
 	out.append(_jitter_box(Vector3(0.56, 0.70, 1.04), 0.05, 47))
-	return out
-
-
-func _make_rock_meshes() -> Array[ArrayMesh]:
-	var out: Array[ArrayMesh] = []
-	out.append(_rock_mesh(2, 1.0, 1.15, Vector3(1.05, 0.82, 0.9)))
-	out.append(_rock_mesh(2, 2.4, 1.25, Vector3(0.9, 0.7, 1.15)))
-	out.append(_rock_mesh(2, 3.1, 0.95, Vector3(1.2, 0.78, 0.85)))
-	out.append(_rock_mesh(2, 5.5, 1.35, Vector3(1.15, 0.65, 1.0)))
 	return out
 
 

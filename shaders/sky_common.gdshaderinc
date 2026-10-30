@@ -12,7 +12,7 @@ uniform sampler2D multiscatter_lut : filter_linear, repeat_disable;
 uniform sampler2D ambient_lut : filter_linear, repeat_disable;
 uniform float sun_disk_radius = 0.0075;
 uniform float sun_disk_intensity = 70.0;
-uniform int cloud_steps = 42;
+uniform int cloud_steps = 34;
 uniform int cloud_light_steps = 4;
 
 global uniform float star_rotation;
@@ -113,13 +113,30 @@ vec3 sun_disk(vec3 rd, vec3 sdir) {
 	return sun_illuminance * (limb * disk * sun_disk_intensity + corona * sun_disk_intensity);
 }
 
+// Sharp things beyond the atmosphere; drawn at full resolution over the soft sky.
+vec3 sky_bodies(vec3 rd, vec3 cam, float px_angle) {
+	if (rd.y < -0.02) {
+		return vec3(0.0);
+	}
+	float alt = max(cam.y, 2.0) * 0.001;
+	vec3 view_t = light_transmittance(transmittance_lut, R_GROUND + alt, rd.y);
+	vec3 col = sun_disk(rd, sun_direction);
+	if (night_factor > 0.001) {
+		col += (star_field(rd, px_angle) + moon_disk(rd, moon_direction, sun_direction) * moon_illuminance * 25.0) * night_factor;
+	}
+	return col * view_t;
+}
+
 // rd: world view direction, cam: camera world position in metres.
-// quality: 0 = environment/radiance, 1 = visible dome.
-vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality) {
+// quality: 0 = environment/radiance (sharp bodies included), 1 = visible sky
+// (soft part only), 2 = visible sky without cumulus.
+// behind: how much of what lies beyond the clouds shows through.
+vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality, out float behind) {
+	behind = 0.0;
 	float alt = max(cam.y, 2.0) * 0.001;
 	vec3 ro = vec3(0.0, R_GROUND + alt, 0.0);
 	vec2 cam_xz = cam.xz * 0.001;
-	int steps = quality == 1 ? 28 : 14;
+	int steps = quality >= 1 ? 16 : 14;
 
 	vec3 tr;
 	vec3 sky = integrate_sky(transmittance_lut, multiscatter_lut, ro, rd, sun_direction, 1e9, steps, tr) * sun_illuminance;
@@ -141,10 +158,7 @@ vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality) {
 	}
 
 	vec3 view_t = tr;
-	if (quality == 1) {
-		sky += sun_disk(rd, sun_direction) * view_t;
-	}
-	if (night_factor > 0.001) {
+	if (quality == 0 && night_factor > 0.001) {
 		sky += (star_field(rd, px_angle) + moon_disk(rd, moon_direction, sun_direction) * moon_illuminance * 25.0)
 				* view_t * night_factor;
 	}
@@ -152,6 +166,7 @@ vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality) {
 	vec4 ci = cirrus_layer(transmittance_lut, ambient_lut, ro, cam_xz, rd);
 	float cirrus_fade = smoothstep(-0.01, 0.12, rd.y);
 	sky = sky * (1.0 - ci.a * cirrus_fade) + ci.rgb * cirrus_fade * mix(vec3(1.0), view_t, 0.35);
+	behind = 1.0 - ci.a * cirrus_fade;
 
 	if (quality == 2) {
 		return sky;
@@ -163,6 +178,7 @@ vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality) {
 	float fade = exp(-md / mix(32.0, 12.0, clamp((mie_scale - 1.0) / 4.0, 0.0, 1.0)));
 	float cloud_alpha = (1.0 - cl.a) * fade;
 	sky = sky * (1.0 - cloud_alpha) + cl.rgb * fade;
+	behind *= 1.0 - cloud_alpha;
 	return sky;
 }
 

@@ -7,5 +7,6 @@ shader_type sky;
 uniform float env_tick = 0.0;
 
 void sky() {
-	COLOR = render_sky(EYEDIR, POSITION, 0.5, 0.002, 0) + vec3(env_tick * 1e-12);
+	float behind;
+	COLOR = render_sky(EYEDIR, POSITION, 0.5, 0.002, 0, behind) + vec3(env_tick * 1e-12);
 }

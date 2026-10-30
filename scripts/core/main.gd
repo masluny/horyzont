@@ -17,6 +17,7 @@ var photo_mode := false
 var quality := "wysoka"
 var ambient: AmbientAudio
 var _sea_timer := 0.0
+var _ssr_timer := 0.0
 var terrain: TerrainData
 var road: RoadBuilder
 var grass: GrassField
@@ -28,6 +29,11 @@ func _ready() -> void:
 		var baker := FoliageBaker.new()
 		add_child(baker)
 		baker.run()
+		return
+	if Game.args.has("bake_models"):
+		var model_baker := ModelBaker.new()
+		add_child(model_baker)
+		model_baker.run()
 		return
 	Game.world = self
 	_build_environment()
@@ -152,9 +158,15 @@ func _apply_perf_off(what: PackedStringArray, water: Node3D, tr: Node3D) -> void
 			"terrain": tr.visible = false
 			"dome": sky.dome.visible = false
 			"envsky": env.sky.process_mode = Sky.PROCESS_MODE_QUALITY
-			"clouds": sky.dome_material.set_shader_parameter("debug_quality", 2)
+			"clouds": sky.set_sky_debug(2)
 			"scale50": get_viewport().scaling_3d_scale = 0.5
 			"grass": grass.visible = false
+			"trees": forest.visible = false
+			"treeshadow":
+				forest.shadow_range = 0.0
+				forest.shadow_near = 0.0
+			"lod0": forest.lod_r0 = 10.0
+			"impostors": forest.get_node("Impostors").visible = false
 			"radiance64": env.sky.radiance_size = Sky.RADIANCE_SIZE_64
 			"envinc": env.sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 			"radiance128": env.sky.radiance_size = Sky.RADIANCE_SIZE_128
@@ -185,7 +197,7 @@ func apply_quality(q: String) -> void:
 			env.ssr_max_steps = 28
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			sun.directional_shadow_max_distance = 320.0
+			sun.directional_shadow_max_distance = 280.0
 			sky.set_cloud_quality(42, 4)
 			if grass: grass.set_density(135)
 		"ultra":
@@ -292,6 +304,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_ssr_timer -= delta
+	if _ssr_timer <= 0.0 and terrain and terrain.is_ready and quality != "niska" and quality != "srednia" and not Game.args.has("perf_off"):
+		_ssr_timer = 0.5
+		_update_ssr()
 	_sea_timer -= delta
 	if ambient and terrain and _sea_timer <= 0.0:
 		# How much open sea surrounds the camera drives the wave sounds.
@@ -310,6 +326,23 @@ func _process(delta: float) -> void:
 		clock.time_scale = lerpf(clock.time_scale, 360.0 if fast else base, 1.0 - exp(-delta * 4.0))
 	if ui:
 		camera.mouse_sensitivity = Settings.mouse_sensitivity
+
+
+## Reflections of the land only matter on wet ground and near the sea, so
+## screen-space reflections stay off the rest of the time.
+func _update_ssr() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var p := cam.global_position
+	var want := weather.wetness > 0.05
+	if not want:
+		for i in 8:
+			var a := TAU * i / 8.0
+			if terrain.height_at(p.x + cos(a) * 180.0, p.z + sin(a) * 180.0) < 0.5:
+				want = true
+				break
+	env.ssr_enabled = want
 
 
 func _build_terrain_collision() -> void:
@@ -352,6 +385,7 @@ func _build_environment() -> void:
 	env.fog_aerial_perspective = 0.85
 	env.fog_sky_affect = 0.0
 	env.fog_height = 25.0
+	env.ambient_light_sky_contribution = 0.78
 	env.ssao_enabled = true
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 1.6

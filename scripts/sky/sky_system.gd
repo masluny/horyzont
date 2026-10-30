@@ -14,6 +14,8 @@ const DETAIL_SIZE := 32
 const DETAIL_TILES := Vector2i(8, 4)
 const WEATHER_SIZE := 512
 const DOME_RADIUS := 32000.0
+const SKY_PASS_SCALE := 0.5
+const CLOUD_SHADOW_SIZE := 256
 
 var environment: Environment
 var dome: MeshInstance3D
@@ -30,6 +32,13 @@ var _cloud_detail: ImageTexture3D
 var _cloud_weather: ImageTexture
 var _registered: Array[ShaderMaterial] = []
 var _frame := 0
+var _sky_vp: Array[SubViewport] = []
+var _sky_mat: Array[ShaderMaterial] = []
+var _sky_flip := 0
+var _sky_warm := 0
+var _prev_basis := Basis.IDENTITY
+var _shadow_vp: SubViewport
+var _shadow_mat: ShaderMaterial
 
 
 func _init(env: Environment) -> void:
@@ -45,6 +54,7 @@ func _ready() -> void:
 	_lut_material(_ambient_vp).set_shader_parameter("transmittance_lut", _transmittance_vp.get_texture())
 	_lut_material(_ambient_vp).set_shader_parameter("multiscatter_lut", _multiscatter_vp.get_texture())
 	_build_materials()
+	_build_passes()
 	_bake_noise()
 
 
@@ -54,11 +64,21 @@ func _process(_delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam and dome:
 		dome.global_position = cam.global_position
+	if cam and is_baked:
+		_update_sky_pass(cam)
+		if _frame % 3 == 0:
+			_update_shadow_pass(cam)
 
 
 func set_cloud_quality(steps: int, light_steps: int) -> void:
-	dome_material.set_shader_parameter("cloud_steps", steps)
-	dome_material.set_shader_parameter("cloud_light_steps", light_steps)
+	for mat in _sky_mat:
+		mat.set_shader_parameter("cloud_steps", steps)
+		mat.set_shader_parameter("cloud_light_steps", light_steps)
+
+
+func set_sky_debug(quality: int) -> void:
+	for mat in _sky_mat:
+		mat.set_shader_parameter("debug_quality", quality)
 
 
 ## Gives a material the LUTs and cloud textures (terrain, water, etc.).
@@ -150,6 +170,58 @@ func _apply_textures(mat: ShaderMaterial) -> void:
 		mat.set_shader_parameter("cloud_weather", _cloud_weather)
 
 
+func _build_passes() -> void:
+	for i in 2:
+		var vp := _make_lut(Vector2i(64, 64), preload("res://shaders/sky_lowres.gdshader"), true)
+		vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		(vp.get_child(0) as ColorRect).set_anchors_preset(Control.PRESET_FULL_RECT)
+		_sky_vp.append(vp)
+		_sky_mat.append(_lut_material(vp))
+		register_material(_lut_material(vp))
+	_shadow_vp = _make_lut(Vector2i(CLOUD_SHADOW_SIZE, CLOUD_SHADOW_SIZE), preload("res://shaders/cloud_shadow_pass.gdshader"), true)
+	_shadow_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_shadow_mat = _lut_material(_shadow_vp)
+	register_material(_shadow_mat)
+	RenderingServer.global_shader_parameter_set("cloud_shadow_tex", _shadow_vp.get_texture().get_rid())
+
+
+func _update_sky_pass(cam: Camera3D) -> void:
+	var main := get_viewport()
+	var size := main.get_visible_rect().size * main.scaling_3d_scale * SKY_PASS_SCALE
+	var want := Vector2i(maxi(int(size.x), 16), maxi(int(size.y), 16))
+	var cur := _sky_vp[_sky_flip]
+	if cur.size != want:
+		for vp in _sky_vp:
+			vp.size = want
+		_sky_warm = 0
+	var other := _sky_vp[1 - _sky_flip]
+	var mat := _sky_mat[_sky_flip]
+	var basis := cam.global_basis.orthonormalized()
+	var tan_y := tan(deg_to_rad(cam.fov) * 0.5)
+	var aspect := float(want.x) / float(want.y)
+	mat.set_shader_parameter("history", other.get_texture())
+	mat.set_shader_parameter("cam_basis", basis)
+	mat.set_shader_parameter("prev_basis_inv", _prev_basis.inverse())
+	mat.set_shader_parameter("tan_half", Vector2(tan_y * aspect, tan_y))
+	mat.set_shader_parameter("cam_pos", cam.global_position)
+	var settled := 0.1 if Game.clock and Game.clock.time_scale > 30.0 else 0.84
+	mat.set_shader_parameter("history_weight", settled if _sky_warm > 2 else 0.0)
+	cur.render_target_update_mode = SubViewport.UPDATE_ONCE
+	dome_material.set_shader_parameter("sky_lowres", cur.get_texture())
+	_prev_basis = basis
+	_sky_flip = 1 - _sky_flip
+	_sky_warm += 1
+
+
+func _update_shadow_pass(cam: Camera3D) -> void:
+	# Snapped to texels so the shadows do not swim as the camera moves.
+	var texel := 8000.0 / CLOUD_SHADOW_SIZE
+	var center := Vector2(snappedf(cam.global_position.x, texel), snappedf(cam.global_position.z, texel))
+	_shadow_mat.set_shader_parameter("center_km", center * 0.001)
+	_shadow_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	RenderingServer.global_shader_parameter_set("cloud_shadow_center", center)
+
+
 func _bake_noise() -> void:
 	var shader := preload("res://shaders/bake/cloud_noise.gdshader")
 	var shape_vp := _bake_viewport(SHAPE_TILES * SHAPE_SIZE, shader, {"mode": 0, "slice_size": float(SHAPE_SIZE), "tiles_x": float(SHAPE_TILES.x)})
@@ -178,7 +250,7 @@ func _bake_noise() -> void:
 		_apply_textures(mat)
 	dome.visible = not Game.args.has("no_dome")
 	if Game.args.has("dome_q"):
-		dome_material.set_shader_parameter("debug_quality", int(Game.arg("dome_q")))
+		set_sky_debug(int(Game.arg("dome_q")))
 	baked.emit()
 
 

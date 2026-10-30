@@ -11,13 +11,13 @@ const FINE := 4.0
 const TABLE_WIDTH := 1024
 const TILES := 3
 # Blades per tile and segments per blade. LOD 2 tiles are twice as wide.
-const BLADES: Array[int] = [2600, 560, 360]
+const BLADES: Array[int] = [2000, 460, 300]
 const SEGMENTS: Array[int] = [4, 2, 1]
 
 var material: ShaderMaterial
-var near_radius := 24.0
-var mid_radius := 68.0
-var far_radius := 170.0
+var near_radius := 20.0
+var mid_radius := 58.0
+var far_radius := 150.0
 
 var _layers: Array[MultiMeshInstance3D] = []
 var _decor: Array[MultiMeshInstance3D] = []
@@ -75,9 +75,9 @@ func setup(data: TerrainData) -> void:
 ## Quality presets pass 90..150; 135 is the shipped "wysoka".
 func set_density(side: int) -> void:
 	var k := clampf(side / 135.0, 0.6, 1.2)
-	near_radius = 24.0 * k
-	mid_radius = 68.0 * k
-	far_radius = 170.0 * k
+	near_radius = 20.0 * k
+	mid_radius = 58.0 * k
+	far_radius = 150.0 * k
 	_apply_radii()
 
 

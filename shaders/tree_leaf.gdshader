@@ -4,6 +4,7 @@ shader_type spatial;
 render_mode cull_disabled, diffuse_lambert, specular_schlick_ggx, depth_draw_opaque;
 
 #include "res://shaders/tree_common.gdshaderinc"
+#include "res://shaders/cloud_shadow.gdshaderinc"
 
 uniform sampler2D leaf_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform sampler2D leaf_normal : hint_normal, filter_linear_mipmap, repeat_disable;
@@ -15,6 +16,7 @@ global uniform float wetness;
 varying vec3 v_n;
 varying vec3 v_col;
 varying float v_ao;
+varying float v_cloud;
 
 varying float v_fade;
 
@@ -25,12 +27,13 @@ void vertex() {
 	v_n = normalize((MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_col = mix(tint_a, tint_b, COLOR.g) * COLOR.r;
 	v_ao = COLOR.r;
+	v_cloud = cloud_shadow(VERTEX.xz);
 }
 
 void fragment() {
 	tree_dither(FRAGCOORD.xy, v_fade);
 	vec4 a = texture(leaf_albedo, UV);
-	vec3 nm = texture(leaf_normal, UV).xyz * 2.0 - 1.0;
+	vec3 nm = lod_kind == 0 ? texture(leaf_normal, UV).xyz * 2.0 - 1.0 : vec3(0.0, 0.0, 1.0);
 	ALBEDO = a.rgb * v_col * mix(1.0, 0.72, wetness);
 	ALPHA = tree_alpha(a.a, UV, 2048.0);
 	ALPHA_SCISSOR_THRESHOLD = 0.42;
@@ -46,8 +49,11 @@ void light() {
 	float front = clamp((ndl + 0.32) / 1.32, 0.0, 1.0);
 	float through = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 2.4);
 	vec3 trans = vec3(1.1, 1.35, 0.42) * through * 0.85 * v_ao;
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (front + trans) / PI;
+	float shadow = ATTENUATION * (LIGHT_IS_DIRECTIONAL ? v_cloud : 1.0);
+	// Sunlight scattered from leaf to leaf inside the crown stays green and warm.
+	float inner = (LIGHT_IS_DIRECTIONAL ? v_cloud : 1.0) * (1.0 - ATTENUATION);
+	DIFFUSE_LIGHT += LIGHT_COLOR * (shadow * (front + trans) + inner * vec3(0.3, 0.42, 0.12) * clamp(front + 0.35, 0.0, 1.0)) / PI;
 	vec3 hv = normalize(VIEW + LIGHT);
 	float ndh = clamp(dot(NORMAL, hv), 0.0, 1.0);
-	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * pow(ndh, 28.0) * 0.12;
+	SPECULAR_LIGHT += LIGHT_COLOR * shadow * pow(ndh, 18.0) * 0.012;
 }

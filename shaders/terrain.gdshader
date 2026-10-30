@@ -5,8 +5,7 @@ shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/terrain_common.gdshaderinc"
-#include "res://shaders/atmosphere.gdshaderinc"
-#include "res://shaders/clouds.gdshaderinc"
+#include "res://shaders/cloud_shadow.gdshaderinc"
 
 uniform sampler2D normalmap : filter_linear_mipmap, repeat_disable;
 uniform sampler2D maskmap : filter_linear_mipmap, repeat_disable;
@@ -135,7 +134,7 @@ void fragment() {
 			t_g = texture(grass_normal, uv_g).rgb * 2.0 - 1.0;
 		}
 		if (w_forest > 0.003) {
-			a_f = sample_mix(forest_albedo, uv_f, tile_n).rgb * 0.8;
+			a_f = sample_mix(forest_albedo, uv_f, tile_n).rgb * vec3(0.3, 0.36, 0.2);
 			m_f = texture(forest_arm, uv_f).rgb;
 			t_f = texture(forest_normal, uv_f).rgb * 2.0 - 1.0;
 		}
@@ -203,13 +202,13 @@ void fragment() {
 		float far_k = smoothstep(400.0, 700.0, dist);
 		vec3 far_alb = meadow_color(dry) * w_grass + textureLod(sand_albedo, uv_s, 9.0).rgb * w_sand
 				+ textureLod(gravel_albedo, uv_v, 9.0).rgb * 0.72 * w_gravel
-				+ textureLod(rock_albedo, uv_g, 9.0).rgb * w_rock + textureLod(forest_albedo, uv_f, 9.0).rgb * 0.8 * w_forest;
+				+ textureLod(rock_albedo, uv_g, 9.0).rgb * w_rock + textureLod(forest_albedo, uv_f, 9.0).rgb * vec3(0.3, 0.36, 0.2) * w_forest;
 		alb = mix(alb, far_alb, far_k);
 	} else {
 		vec2 uv = world_pos.xz / 4.6;
 		alb = meadow_color(dry) * w_grass + textureLod(sand_albedo, uv, 9.0).rgb * w_sand
 				+ textureLod(gravel_albedo, uv, 9.0).rgb * 0.72 * w_gravel + textureLod(rock_albedo, uv, 9.0).rgb * w_rock
-				+ textureLod(forest_albedo, uv, 9.0).rgb * 0.8 * w_forest;
+				+ textureLod(forest_albedo, uv, 9.0).rgb * vec3(0.3, 0.36, 0.2) * w_forest;
 		arm = vec3(1.0, 0.85, 0.0);
 	}
 
@@ -238,8 +237,7 @@ void fragment() {
 	SPECULAR = 0.4;
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 
-	// Cloud shadow from the same density field as the visible clouds.
-	cloud_light = dist < 2500.0 ? mix(0.12, 1.0, cloud_shadow_at(world_pos.xz * 0.001, sun_direction)) : 1.0;
+	cloud_light = cloud_shadow(world_pos.xz);
 }
 
 void light() {

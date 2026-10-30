@@ -16,6 +16,9 @@ func run(seconds: float) -> void:
 	if Game.args.has("mode") and Game.arg("mode") == "chase":
 		world.camera.set_mode(CameraRig.Mode.CHASE)
 	Game.clock.paused = true
+	if Game.args.has("road_near"):
+		var at := Game.vec3_arg("road_near", Vector3.ZERO)
+		world.car.place_on_road(world.terrain.nearest_road_index(at))
 	if Game.args.has("uncapped"):
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	var vp := get_viewport().get_viewport_rid()
