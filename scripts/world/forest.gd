@@ -15,10 +15,10 @@ const BODY_POOL := 14
 
 const ROWS_PER_VARIANT := 4
 
-@export var lod_r0 := 46.0
-@export var lod_r1 := 120.0
-@export var shadow_near := 58.0
-@export var shadow_range := 140.0
+var lod_r0 := 38.0
+var lod_r1 := 88.0
+var shadow_near := 46.0
+var shadow_range := 125.0
 
 var tree_count := 0
 
@@ -41,6 +41,7 @@ var _last_pos := Vector3(1e9, 0, 0)
 var _last_dir := Vector3.ZERO
 var _bodies: Array[StaticBody3D] = []
 var _body_timer := 0.0
+var _impostor_mat: ShaderMaterial
 
 
 func build(data: TerrainData, extra: Array[Vector3]) -> void:
@@ -303,6 +304,7 @@ func _build_impostors() -> void:
 	mat.set_shader_parameter("atlas_size", Vector2(vp_size))
 	mat.set_shader_parameter("fade_near", lod_r1 - 20.0)
 	mat.set_shader_parameter("fade_far", lod_r1)
+	_impostor_mat = mat
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_custom_data = true
@@ -331,6 +333,22 @@ func _build_impostors() -> void:
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	inst.custom_aabb = AABB(Vector3(-8000, -300, -8000), Vector3(16000, 1400, 16000))
 	add_child(inst)
+
+
+## Distances scale with the quality preset: 1.0 is "wysoka".
+func set_quality(k: float) -> void:
+	lod_r0 = 38.0 * k
+	lod_r1 = 88.0 * k
+	shadow_near = 46.0 * k
+	shadow_range = 125.0 * k
+	for key in _leaf_mats:
+		for m: ShaderMaterial in [_leaf_mats[key], _bark_mats[key]]:
+			m.set_shader_parameter("lod_r0", lod_r0)
+			m.set_shader_parameter("lod_r1", lod_r1)
+	if _impostor_mat:
+		_impostor_mat.set_shader_parameter("fade_near", lod_r1 - 20.0)
+		_impostor_mat.set_shader_parameter("fade_far", lod_r1)
+	_last_pos = Vector3(1e9, 0, 0)
 
 
 func _build_bodies() -> void:

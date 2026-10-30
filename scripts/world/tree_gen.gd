@@ -210,9 +210,8 @@ func _place_cards() -> void:
 	for twig in _cards:
 		var pts: Array = twig["pts"]
 		var dir: Vector3 = (pts[pts.size() - 1] - pts[0]).normalized()
-		var size := _rng.randf_range(lo, hi) * 2.1
+		var size := _rng.randf_range(lo, hi) * 2.2
 		_card(pts[pts.size() - 1], dir, size, twig["flex"], twig["phase"], 1)
-		_card(pts[pts.size() / 2], dir, size * 0.8, twig["flex"], twig["phase"], 1)
 
 
 func _card(at: Vector3, dir: Vector3, size: float, flex: float, phase: float, lod: int) -> void:

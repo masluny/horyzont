@@ -21,7 +21,7 @@ uniform sampler2D cloud_weather : filter_linear_mipmap, repeat_enable;
 
 const float CLOUD_EXTINCTION = 62.0; // per km at density 1
 const float SHAPE_TILE = 3.7;
-const float DETAIL_TILE = 0.62;
+const float DETAIL_TILE = 0.44;
 const float WEATHER_TILE = 24.0;
 const float CIRRUS_ALT = 8.5;
 
@@ -67,7 +67,10 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 		vec3 dn = textureLod(cloud_detail, dp, 0.0).rgb;
 		float dfbm = dn.r * 0.625 + dn.g * 0.25 + dn.b * 0.125;
 		float dmod = mix(dfbm, 1.0 - dfbm, clamp(hf * 5.0, 0.0, 1.0));
-		base = clamp((base - dmod * 0.5) / max(1.0 - dmod * 0.5, 1e-3), 0.0, 1.0);
+		// A second, finer pass eats the very edge into small billows.
+		float fine = textureLod(cloud_detail, dp * 2.7 + 0.31, 0.0).r;
+		float edge = 1.0 - smoothstep(0.0, 0.5, base);
+		base = clamp((base - dmod * 0.56 - fine * 0.2 * edge) / max(1.0 - dmod * 0.56, 1e-3), 0.0, 1.0);
 	}
 	return base * cloud_density;
 }

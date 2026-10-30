@@ -153,8 +153,6 @@ func take_photo() -> void:
 	ui.visible = true
 	if beacon:
 		beacon.visible = true
-	if img.get_width() > 1920:
-		img.resize(1920, int(img.get_height() * 1920.0 / img.get_width()), Image.INTERPOLATE_LANCZOS)
 	DirAccess.make_dir_recursive_absolute(ALBUM_DIR)
 	var stamp := Time.get_datetime_string_from_system().replace(":", "-")
 	var base := "%s/%s_%s" % [ALBUM_DIR, c["id"] if at_card else "wolne", stamp]

@@ -38,7 +38,7 @@ void fragment() {
 	ALPHA = tree_alpha(a.a, UV, 2048.0);
 	ALPHA_SCISSOR_THRESHOLD = 0.42;
 	NORMAL = normalize(v_n + (TANGENT * nm.x + BINORMAL * nm.y) * 0.55);
-	ROUGHNESS = mix(0.46, 0.25, wetness);
+	ROUGHNESS = mix(0.46, 0.36, wetness);
 	SPECULAR = 0.38;
 	AO = clamp(v_ao + 0.35, 0.0, 1.0);
 	AO_LIGHT_AFFECT = 0.2;
@@ -51,8 +51,8 @@ void light() {
 	vec3 trans = vec3(1.1, 1.35, 0.42) * through * 0.85 * v_ao;
 	float shadow = ATTENUATION * (LIGHT_IS_DIRECTIONAL ? v_cloud : 1.0);
 	// Sunlight scattered from leaf to leaf inside the crown stays green and warm.
-	float inner = (LIGHT_IS_DIRECTIONAL ? v_cloud : 1.0) * (1.0 - ATTENUATION);
-	DIFFUSE_LIGHT += LIGHT_COLOR * (shadow * (front + trans) + inner * vec3(0.3, 0.42, 0.12) * clamp(front + 0.35, 0.0, 1.0)) / PI;
+	float inner = LIGHT_IS_DIRECTIONAL ? v_cloud * (1.0 - ATTENUATION) : 0.0;
+	DIFFUSE_LIGHT += LIGHT_COLOR * (shadow * (front + trans) + inner * vec3(0.11, 0.17, 0.05) * clamp(front + 0.35, 0.0, 1.0)) / PI;
 	vec3 hv = normalize(VIEW + LIGHT);
 	float ndh = clamp(dot(NORMAL, hv), 0.0, 1.0);
 	SPECULAR_LIGHT += LIGHT_COLOR * shadow * pow(ndh, 18.0) * 0.012;

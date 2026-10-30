@@ -18,10 +18,12 @@ var quality := "wysoka"
 var ambient: AmbientAudio
 var _sea_timer := 0.0
 var _ssr_timer := 0.0
+var _scale_before_photo := 0.58
 var terrain: TerrainData
 var road: RoadBuilder
 var grass: GrassField
 var forest: Forest
+var sharpen: ColorRect
 
 
 func _ready() -> void:
@@ -110,6 +112,7 @@ func _ready() -> void:
 	camera.snap()
 	if Game.args.has("cinema"):
 		set_cinema(true)
+	_build_sharpen()
 	var headless_run := Game.args.has("shots") or Game.args.has("bench")
 	if not headless_run:
 		ui = UIRoot.new()
@@ -162,6 +165,7 @@ func _apply_perf_off(what: PackedStringArray, water: Node3D, tr: Node3D) -> void
 			"scale50": get_viewport().scaling_3d_scale = 0.5
 			"grass": grass.visible = false
 			"trees": forest.visible = false
+			"sharpen": sharpen.visible = false
 			"treeshadow":
 				forest.shadow_range = 0.0
 				forest.shadow_near = 0.0
@@ -182,32 +186,36 @@ func apply_quality(q: String) -> void:
 			env.ssr_enabled = false
 			env.ssao_enabled = false
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-			sun.directional_shadow_max_distance = 200.0
-			sky.set_cloud_quality(32, 3)
-			if grass: grass.set_density(90)
+			sun.directional_shadow_max_distance = 180.0
+			sky.set_cloud_quality(24, 3)
+			if grass: grass.set_density(85)
+			if forest: forest.set_quality(0.65)
 		"srednia":
 			env.ssr_enabled = false
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			sun.directional_shadow_max_distance = 260.0
-			sky.set_cloud_quality(44, 4)
-			if grass: grass.set_density(120)
+			sun.directional_shadow_max_distance = 230.0
+			sky.set_cloud_quality(30, 3)
+			if grass: grass.set_density(110)
+			if forest: forest.set_quality(0.8)
 		"wysoka":
 			env.ssr_enabled = true
 			env.ssr_max_steps = 28
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 			sun.directional_shadow_max_distance = 280.0
-			sky.set_cloud_quality(42, 4)
+			sky.set_cloud_quality(34, 4)
 			if grass: grass.set_density(135)
+			if forest: forest.set_quality(1.0)
 		"ultra":
 			env.ssr_enabled = true
 			env.ssr_max_steps = 56
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			sun.directional_shadow_max_distance = 450.0
-			sky.set_cloud_quality(72, 6)
-			if grass: grass.set_density(150)
+			sun.directional_shadow_max_distance = 420.0
+			sky.set_cloud_quality(56, 6)
+			if grass: grass.set_density(162)
+			if forest: forest.set_quality(1.6)
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if OS.get_name() == "macOS" else Viewport.SCALING_3D_MODE_FSR2
 
 
@@ -246,13 +254,18 @@ func _playing() -> bool:
 
 func toggle_photo_mode() -> void:
 	photo_mode = not photo_mode
+	var vp := get_viewport()
 	if photo_mode:
+		# Nothing moves in a photo, so render every pixel.
+		_scale_before_photo = vp.scaling_3d_scale
+		vp.scaling_3d_scale = 1.0
 		car.controls_enabled = false
 		camera.set_mode(CameraRig.Mode.PHOTO)
 		ui.hud.visible = false
 		ui.photo_overlay.visible = true
 		_capture_mouse()
 	else:
+		vp.scaling_3d_scale = _scale_before_photo
 		ui.photo_overlay.visible = false
 		ui.hud.visible = true
 		camera.set_mode(CameraRig.Mode.CINEMATIC if cinema else CameraRig.Mode.CHASE)
@@ -343,6 +356,20 @@ func _update_ssr() -> void:
 				want = true
 				break
 	env.ssr_enabled = want
+
+
+func _build_sharpen() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "Sharpen"
+	layer.layer = -1
+	sharpen = ColorRect.new()
+	sharpen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sharpen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/sharpen.gdshader")
+	sharpen.material = mat
+	layer.add_child(sharpen)
+	add_child(layer)
 
 
 func _build_terrain_collision() -> void:
