@@ -10,6 +10,7 @@ const PHASE_MASK := 0xFFFFFFFF
 const INDEX_SHIFT := 21
 const PHASE_PER_HZ := 4294967296.0 / MIX_RATE
 const MAX_FRAMES := 4096
+const FILL_CAP := 736
 const NOISE_SCALE := 2.0 / 65535.0
 const SEA_A := 0.145 # ~550 Hz, two poles stacked in the loop
 const WIND_HI_A := 0.22 # ~900 Hz
@@ -22,7 +23,6 @@ var enabled := true
 var master_volume := 1.0
 
 var _player: AudioStreamPlayer
-var _pb: AudioStreamGeneratorPlayback
 var _buf := PackedVector2Array()
 var _rng := RandomNumberGenerator.new()
 
@@ -86,7 +86,6 @@ var _cr_env2 := 0.0
 var _cr_burst := 0.0
 var _cr_burst2 := 0.0
 var _cr_clock := 0.0
-var _max_us := 0
 
 
 static func _build_sine() -> void:
@@ -121,9 +120,11 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	if _player != null and _player.playing:
+	if _player == null:
+		return
+	if _player.playing:
 		_player.stop()
-	_pb = null
+	_player.stream = null
 
 
 func _process(delta: float) -> void:
@@ -153,20 +154,15 @@ func _process(delta: float) -> void:
 	_gust_t = 0.40 + 0.38 * (0.5 + 0.5 * g1) + 0.22 * (0.5 + 0.5 * g2)
 	_schedule_chirps(dt)
 	_schedule_crickets(dt)
-	if not _playback_ready():
+	var playback := _playback()
+	if playback == null:
 		return
-	var frames_available := _pb.get_frames_available()
-	if frames_available > MAX_FRAMES:
-		frames_available = MAX_FRAMES
+	var frames_available := playback.get_frames_available()
+	if frames_available > FILL_CAP:
+		frames_available = FILL_CAP
 	if frames_available <= 0:
 		return
-	var t0 := Time.get_ticks_usec()
-	_fill(frames_available)
-	var us := Time.get_ticks_usec() - t0
-	if us > _max_us:
-		_max_us = us
-	if Engine.get_process_frames() % 60 == 0:
-		print("AMB_US ", us, " max ", _max_us, " n ", frames_available)
+	_fill(frames_available, playback)
 
 
 func _schedule_chirps(dt: float) -> void:
@@ -235,7 +231,7 @@ func _schedule_crickets(dt: float) -> void:
 	_cr_burst2 = 1.0 if shifted < 0.14 else 0.0
 
 
-func _fill(n: int) -> void:
+func _fill(n: int, playback: AudioStreamGeneratorPlayback) -> void:
 	var sine := _sine
 	var buf := _buf
 	_buf = PackedVector2Array()
@@ -353,7 +349,7 @@ func _fill(n: int) -> void:
 	_cr_am2 = cr_am2
 	_cr_env = cr_env
 	_cr_env2 = cr_env2
-	_pb.push_buffer(buf)
+	playback.push_buffer(buf)
 	_buf = buf
 
 
@@ -373,15 +369,12 @@ func _hour() -> float:
 	return float(v)
 
 
-func _playback_ready() -> bool:
-	if _pb != null:
-		return true
+func _playback() -> AudioStreamGeneratorPlayback:
 	if _player == null:
-		return false
+		return null
 	if not _player.playing:
 		_player.play()
-	_pb = _player.get_stream_playback() as AudioStreamGeneratorPlayback
-	return _pb != null
+	return _player.get_stream_playback() as AudioStreamGeneratorPlayback
 
 
 func _hz_to_inc(hz: float) -> int:

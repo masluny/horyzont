@@ -36,7 +36,7 @@ func setup(data: TerrainData, sky: SkySystem) -> void:
 		mi.mesh = full if i == 0 else ring
 		mi.material_override = material
 		mi.custom_aabb = AABB(Vector3(-8000, -300, -8000), Vector3(16000, 1400, 16000))
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if i <= 3 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
 		_levels.append(mi)
 	_update(Vector3.ZERO)

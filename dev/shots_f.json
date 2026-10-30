@@ -1,0 +1,2 @@
+[ {"time": 15.0, "weather": "deszcz", "drive": 3, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/f_a.png", "frames": 2, "width": 480},
+  {"time": 13.0, "weather": "pochmurno", "drive": 2, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/f_b.png", "frames": 2, "width": 480} ]

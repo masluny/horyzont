@@ -81,6 +81,10 @@ func _ready() -> void:
 	_ray.collide_with_areas = false
 	model = CarModel.new()
 	add_child(model)
+	if not Game.args.has("shots") and not Game.args.has("mute"):
+		var audio := CarAudio.new()
+		audio.name = "Audio"
+		add_child(audio)
 	Game.car = self
 
 

@@ -11,6 +11,8 @@ const PHASE_MASK := 0xFFFFFFFF
 const INDEX_SHIFT := 21
 const PHASE_PER_HZ := 4294967296.0 / MIX_RATE
 const MAX_FRAMES := 4096
+# Cap a single frame so a cold buffer cannot blow the 0.8 ms budget.
+const FILL_CAP := 736
 const NOISE_SCALE := 2.0 / 65535.0
 
 # One-pole coefficients at MIX_RATE: 1 - exp(-2π fc / sr).
@@ -26,6 +28,8 @@ const HARM_SOFT: Array[float] = [0.72, 0.20, 0.06, 0.015, 0.004, 0.001]
 const HARM_BRIGHT: Array[float] = [0.30, 0.26, 0.20, 0.13, 0.07, 0.04]
 
 static var _sine := PackedFloat32Array()
+static var _wave_soft := PackedFloat32Array()
+static var _wave_bright := PackedFloat32Array()
 
 var rpm := 800.0
 var throttle := 0.0
@@ -39,8 +43,6 @@ var auto_from_game := true
 
 var _engine: AudioStreamPlayer3D
 var _body: AudioStreamPlayer3D
-var _pb_engine: AudioStreamGeneratorPlayback
-var _pb_body: AudioStreamGeneratorPlayback
 var _buf_engine := PackedVector2Array()
 var _buf_body := PackedVector2Array()
 
@@ -69,18 +71,8 @@ var _sq_mod := 0
 var _rain_lp := 0.0
 var _click := 0.0
 
-var _a1 := 0.0
-var _a2 := 0.0
-var _a3 := 0.0
-var _a4 := 0.0
-var _a5 := 0.0
-var _a6 := 0.0
-var _a1_t := 0.0
-var _a2_t := 0.0
-var _a3_t := 0.0
-var _a4_t := 0.0
-var _a5_t := 0.0
-var _a6_t := 0.0
+var _bright := 0.0
+var _bright_t := 0.0
 var _eng_g := 0.0
 var _eng_g_t := 0.0
 var _intake_g := 0.0
@@ -100,7 +92,6 @@ var _inc1 := 0
 var _inc2 := 0
 var _crack_gate := 0
 var _rain_gate := 0
-var _max_us := 0
 
 
 static func _build_sine() -> void:
@@ -110,6 +101,26 @@ static func _build_sine() -> void:
 	var step := TAU / float(SINE_SIZE)
 	for i in SINE_SIZE:
 		_sine[i] = sin(float(i) * step)
+	# One cycle of the inline-4 stack (fundamental..6th), soft and bright.
+	# The voice loop only advances two phases and reads these tables.
+	_wave_soft.resize(SINE_SIZE)
+	_wave_bright.resize(SINE_SIZE)
+	var sum_s := 0.0
+	var sum_b := 0.0
+	for h in 6:
+		sum_s += HARM_SOFT[h]
+		sum_b += HARM_BRIGHT[h]
+	var inv_s := 1.0 / sum_s
+	var inv_b := 1.0 / sum_b
+	for i in SINE_SIZE:
+		var soft := 0.0
+		var bright := 0.0
+		for h in 6:
+			var partial := _sine[(i * (h + 1)) & SINE_MASK]
+			soft += partial * HARM_SOFT[h]
+			bright += partial * HARM_BRIGHT[h]
+		_wave_soft[i] = soft * inv_s
+		_wave_bright[i] = bright * inv_b
 
 
 func _ready() -> void:
@@ -122,15 +133,20 @@ func _ready() -> void:
 	_body = _add_voice("Body")
 	_pull_smoothed_from_public()
 	_update_targets()
+	_bright = _bright_t
 
 
 func _exit_tree() -> void:
-	if _engine != null and _engine.playing:
-		_engine.stop()
-	if _body != null and _body.playing:
-		_body.stop()
-	_pb_engine = null
-	_pb_body = null
+	_release(_engine)
+	_release(_body)
+
+
+func _release(player: AudioStreamPlayer3D) -> void:
+	if player == null:
+		return
+	if player.playing:
+		player.stop()
+	player.stream = null
 
 
 func _process(delta: float) -> void:
@@ -145,21 +161,17 @@ func _process(delta: float) -> void:
 	var master_target := 0.0 if muted else maxf(master_volume, 0.0)
 	_master_s = _smooth(_master_s, master_target, dt, 0.03)
 	_update_targets()
-	if not _playbacks_ready():
+	var engine_pb := _playback(_engine)
+	var body_pb := _playback(_body)
+	if engine_pb == null or body_pb == null:
 		return
-	var frames_available := _pb_engine.get_frames_available()
-	frames_available = mini(frames_available, _pb_body.get_frames_available())
-	if frames_available > MAX_FRAMES:
-		frames_available = MAX_FRAMES
+	var frames_available := engine_pb.get_frames_available()
+	frames_available = mini(frames_available, body_pb.get_frames_available())
+	if frames_available > FILL_CAP:
+		frames_available = FILL_CAP
 	if frames_available <= 0:
 		return
-	var t0 := Time.get_ticks_usec()
-	_fill(frames_available)
-	var us := Time.get_ticks_usec() - t0
-	if us > _max_us:
-		_max_us = us
-	if Engine.get_process_frames() % 60 == 0:
-		print("CAR_US ", us, " max ", _max_us, " n ", frames_available)
+	_fill(frames_available, engine_pb, body_pb)
 
 
 func _read_game() -> void:
@@ -195,15 +207,7 @@ func _add_voice(voice_name: String) -> AudioStreamPlayer3D:
 	return player
 
 
-func _playbacks_ready() -> bool:
-	_pb_engine = _playback(_engine, _pb_engine)
-	_pb_body = _playback(_body, _pb_body)
-	return _pb_engine != null and _pb_body != null
-
-
-func _playback(player: AudioStreamPlayer3D, cached: AudioStreamGeneratorPlayback) -> AudioStreamGeneratorPlayback:
-	if cached != null:
-		return cached
+func _playback(player: AudioStreamPlayer3D) -> AudioStreamGeneratorPlayback:
 	if player == null:
 		return null
 	if not player.playing:
@@ -238,20 +242,7 @@ func _update_targets() -> void:
 		bright = 0.0
 	elif bright > 1.0:
 		bright = 1.0
-	var h1 := lerpf(HARM_SOFT[0], HARM_BRIGHT[0], bright)
-	var h2 := lerpf(HARM_SOFT[1], HARM_BRIGHT[1], bright)
-	var h3 := lerpf(HARM_SOFT[2], HARM_BRIGHT[2], bright)
-	var h4 := lerpf(HARM_SOFT[3], HARM_BRIGHT[3], bright)
-	var h5 := lerpf(HARM_SOFT[4], HARM_BRIGHT[4], bright)
-	var h6 := lerpf(HARM_SOFT[5], HARM_BRIGHT[5], bright)
-	var sum := h1 + h2 + h3 + h4 + h5 + h6
-	var norm := 1.0 / sum if sum > 0.0001 else 0.0
-	_a1_t = h1 * norm
-	_a2_t = h2 * norm
-	_a3_t = h3 * norm
-	_a4_t = h4 * norm
-	_a5_t = h5 * norm
-	_a6_t = h6 * norm
+	_bright_t = bright
 	var rpm_lift := (_rpm_s - 600.0) / 4500.0
 	if rpm_lift < 0.0:
 		rpm_lift = 0.0
@@ -280,8 +271,10 @@ func _update_targets() -> void:
 	_rain_gate = int(_rain_s * 120.0)
 
 
-func _fill(n: int) -> void:
+func _fill(n: int, engine_pb: AudioStreamGeneratorPlayback, body_pb: AudioStreamGeneratorPlayback) -> void:
 	var sine := _sine
+	var wsoft := _wave_soft
+	var wbright := _wave_bright
 	var eng := _buf_engine
 	var body := _buf_body
 	_buf_engine = PackedVector2Array()
@@ -304,18 +297,8 @@ func _fill(n: int) -> void:
 	var sq_ph := _sq_ph
 	var rain_lp := _rain_lp
 	var click := _click
-	var a1 := _a1
-	var a2 := _a2
-	var a3 := _a3
-	var a4 := _a4
-	var a5 := _a5
-	var a6 := _a6
-	var d1 := (_a1_t - a1) * inv
-	var d2 := (_a2_t - a2) * inv
-	var d3 := (_a3_t - a3) * inv
-	var d4 := (_a4_t - a4) * inv
-	var d5 := (_a5_t - a5) * inv
-	var d6 := (_a6_t - a6) * inv
+	var bright := _bright
+	var dbright := (_bright_t - bright) * inv
 	var eg := _eng_g
 	var deg := (_eng_g_t - eg) * inv
 	var ig := _intake_g
@@ -347,18 +330,11 @@ func _fill(n: int) -> void:
 		p2 = (p2 + inc2) & mask
 		var i1 := (p1 >> INDEX_SHIFT) & SINE_MASK
 		var i2 := (p2 >> INDEX_SHIFT) & SINE_MASK
-		var f1 := sine[i1]
-		var v1 := f1 * a1 + sine[(i1 * 2) & SINE_MASK] * a2 + sine[(i1 * 3) & SINE_MASK] * a3 + sine[(i1 * 4) & SINE_MASK] * a4 + sine[(i1 * 5) & SINE_MASK] * a5 + sine[(i1 * 6) & SINE_MASK] * a6
-		var f2 := sine[i2]
-		var v2 := f2 * a1 + sine[(i2 * 2) & SINE_MASK] * a2 + sine[(i2 * 3) & SINE_MASK] * a3 + sine[(i2 * 4) & SINE_MASK] * a4 + sine[(i2 * 5) & SINE_MASK] * a5 + sine[(i2 * 6) & SINE_MASK] * a6
-		a1 += d1
-		a2 += d2
-		a3 += d3
-		a4 += d4
-		a5 += d5
-		a6 += d6
+		var v1 := wsoft[i1] + (wbright[i1] - wsoft[i1]) * bright
+		var v2 := wsoft[i2] + (wbright[i2] - wsoft[i2]) * bright
+		bright += dbright
+		var pulse := 0.5 + 0.5 * sine[i1]
 		intake += (nz - intake) * INTAKE_A
-		var pulse := 0.5 + 0.5 * f1
 		var chug := (1.0 - chug_depth) + chug_depth * pulse
 		crack *= 0.93
 		if crack_gate > 0 and (re & 65535) < crack_gate:
@@ -368,18 +344,6 @@ func _fill(n: int) -> void:
 		var right := (v2 * 0.56 + v1 * 0.44 + mid) * chug * eg
 		eg += deg
 		ig += dig
-		var l2 := left * left
-		left = left - left * l2 * 0.18
-		var r2 := right * right
-		right = right - right * r2 * 0.18
-		if left > 0.97:
-			left = 0.97
-		elif left < -0.97:
-			left = -0.97
-		if right > 0.97:
-			right = 0.97
-		elif right < -0.97:
-			right = -0.97
 		eng[i] = Vector2(left, right)
 
 		rb = (rb * 1664525 + 1013904223) & mask
@@ -406,10 +370,6 @@ func _fill(n: int) -> void:
 		rain_lp += (n3 - rain_lp) * RAIN_A
 		var roof := (click * 0.85 + rain_lp * 0.35) * qg
 		var mixed := wind + road + squeal + roof
-		if mixed > 0.97:
-			mixed = 0.97
-		elif mixed < -0.97:
-			mixed = -0.97
 		body[i] = Vector2(mixed, mixed)
 		wg += dwg
 		rg += drg
@@ -431,12 +391,7 @@ func _fill(n: int) -> void:
 	_sq_ph = sq_ph
 	_rain_lp = rain_lp
 	_click = click
-	_a1 = _a1_t
-	_a2 = _a2_t
-	_a3 = _a3_t
-	_a4 = _a4_t
-	_a5 = _a5_t
-	_a6 = _a6_t
+	_bright = _bright_t
 	_eng_g = _eng_g_t
 	_intake_g = _intake_g_t
 	_wind_g = _wind_g_t
@@ -444,8 +399,8 @@ func _fill(n: int) -> void:
 	_hiss_g = _hiss_g_t
 	_sq_g = _sq_g_t
 	_rain_g = _rain_g_t
-	_pb_engine.push_buffer(eng)
-	_pb_body.push_buffer(body)
+	engine_pb.push_buffer(eng)
+	body_pb.push_buffer(body)
 	_buf_engine = eng
 	_buf_body = body
 

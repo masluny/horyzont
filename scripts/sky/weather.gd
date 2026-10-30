@@ -153,7 +153,8 @@ func _process(delta: float) -> void:
 	RenderingServer.global_shader_parameter_set("world_wind", wind_dir * _value["wind"])
 
 	if env:
-		env.fog_density = _value["fog"]
+		# Godot's exponential fog needs ~12x the textbook extinction for this look.
+		env.fog_density = _value["fog"] * 12.0 * float(Game.arg("fog_mul", "1"))
 		env.fog_height_density = _value["height_fog"]
 
 

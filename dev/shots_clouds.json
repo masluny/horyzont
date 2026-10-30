@@ -1,0 +1,2 @@
+[ {"time": 12.5, "weather": "cumulusy", "cam": [-3300, 80, 600], "look": [-3800, 400, -300], "out": "/Users/macbookkacper/dev/horyzont/dev/out/cl_noon.png", "frames": 40},
+  {"time": 19.2, "weather": "burzowy_zachod", "cam": [-3000, 60, 500], "look": [-4000, 300, -400], "out": "/Users/macbookkacper/dev/horyzont/dev/out/cl_storm.png", "frames": 40} ]

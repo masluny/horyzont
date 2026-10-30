@@ -11,7 +11,7 @@ const WORLD := 10240.0
 const TEXEL := WORLD / SIZE
 const H_MIN := -200.0
 const H_RANGE := 1000.0
-const CACHE_PATH := "user://cache/terrain_v5.bin"
+const CACHE_PATH := "user://cache/terrain_v6.bin"
 const ROAD_HALF_WIDTH := 3.6
 const ROAD_SHOULDER := 1.8
 const ROAD_STEP := 4.0
@@ -266,7 +266,7 @@ func _carve() -> void:
 		var slope_w := clampf(dh * 1.5, 5.0, CARVE_REACH - flat)
 		var w := 1.0 - smoothstep(flat, flat + slope_w, d)
 		heights[idx] = lerpf(heights[idx], tgt, w)
-		mask[idx] = int(255.0 * (1.0 - smoothstep(flat - 1.0, flat + 3.5, d)))
+		mask[idx] = int(255.0 * (1.0 - smoothstep(flat - 2.2, flat + 0.6, d)))
 
 
 func _save_cache() -> void:

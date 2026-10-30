@@ -1,0 +1,2 @@
+[ {"time": 15.0, "weather": "deszcz", "drive": 5, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/dev/out/r_rain.png", "frames": 2},
+  {"time": 5.4, "weather": "poranna_mgla", "drive": 4, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/dev/out/r_fog.png", "frames": 2} ]

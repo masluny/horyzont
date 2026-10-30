@@ -12,6 +12,8 @@ uniform sampler2D multiscatter_lut : filter_linear, repeat_disable;
 uniform sampler2D ambient_lut : filter_linear, repeat_disable;
 uniform float sun_disk_radius = 0.0075;
 uniform float sun_disk_intensity = 70.0;
+uniform int cloud_steps = 48;
+uniform int cloud_light_steps = 4;
 
 global uniform float star_rotation;
 global uniform float night_factor;
@@ -151,9 +153,12 @@ vec3 render_sky(vec3 rd, vec3 cam, float jitter, float px_angle, int quality) {
 	float cirrus_fade = smoothstep(-0.01, 0.12, rd.y);
 	sky = sky * (1.0 - ci.a * cirrus_fade) + ci.rgb * cirrus_fade * mix(vec3(1.0), view_t, 0.35);
 
+	if (quality == 2) {
+		return sky;
+	}
 	float md;
 	vec4 cl = march_clouds(transmittance_lut, ambient_lut, ro, cam_xz, rd,
-			quality == 1 ? 56 : 18, quality == 1 ? 5 : 2, quality == 1, jitter, md);
+			quality == 1 ? cloud_steps : 18, quality == 1 ? cloud_light_steps : 2, quality == 1, jitter, md);
 	// Aerial perspective: distant clouds dissolve into the sky.
 	float fade = exp(-md / mix(32.0, 12.0, clamp((mie_scale - 1.0) / 4.0, 0.0, 1.0)));
 	float cloud_alpha = (1.0 - cl.a) * fade;

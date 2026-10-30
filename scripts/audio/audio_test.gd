@@ -7,7 +7,6 @@ const AmbScript := preload("res://scripts/audio/ambient_audio.gd")
 
 var _car: Node
 var _elapsed := 0.0
-var _mem0 := 0
 
 
 func _ready() -> void:
@@ -29,7 +28,6 @@ func _ready() -> void:
 	camera.name = "Listener"
 	camera.current = true
 	add_child(camera)
-	_mem0 = OS.get_static_memory_usage()
 
 
 func _process(delta: float) -> void:
@@ -37,9 +35,5 @@ func _process(delta: float) -> void:
 	var k := clampf(_elapsed / SWEEP_SEC, 0.0, 1.0)
 	_car.set("rpm", lerpf(800.0, 6500.0, k))
 	_car.set("speed_kmh", lerpf(0.0, 160.0, k))
-	var frame := Engine.get_process_frames()
-	if frame == 30 or frame == 120 or frame == 300:
-		var mem := OS.get_static_memory_usage() - _mem0
-		print("AUDIO_BENCH frame=", frame, " elapsed=", snapped(_elapsed, 0.01), " dmem=", mem, " rpm=", _car.get("rpm"))
 	if _elapsed >= SWEEP_SEC:
 		get_tree().quit()

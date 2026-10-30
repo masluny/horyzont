@@ -56,6 +56,11 @@ func _process(_delta: float) -> void:
 		dome.global_position = cam.global_position
 
 
+func set_cloud_quality(steps: int, light_steps: int) -> void:
+	dome_material.set_shader_parameter("cloud_steps", steps)
+	dome_material.set_shader_parameter("cloud_light_steps", light_steps)
+
+
 ## Gives a material the LUTs and cloud textures (terrain, water, etc.).
 func register_material(mat: ShaderMaterial) -> void:
 	if not _registered.has(mat):

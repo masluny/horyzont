@@ -19,9 +19,9 @@ uniform sampler3D cloud_shape : filter_linear, repeat_enable;
 uniform sampler3D cloud_detail : filter_linear, repeat_enable;
 uniform sampler2D cloud_weather : filter_linear_mipmap, repeat_enable;
 
-const float CLOUD_EXTINCTION = 42.0; // per km at density 1
-const float SHAPE_TILE = 9.0;
-const float DETAIL_TILE = 1.25;
+const float CLOUD_EXTINCTION = 62.0; // per km at density 1
+const float SHAPE_TILE = 5.5;
+const float DETAIL_TILE = 0.85;
 const float WEATHER_TILE = 46.0;
 const float CIRRUS_ALT = 8.5;
 
@@ -64,7 +64,7 @@ float cloud_density_at(vec3 wp, float hf, bool detail) {
 		vec3 dn = textureLod(cloud_detail, dp, 0.0).rgb;
 		float dfbm = dn.r * 0.625 + dn.g * 0.25 + dn.b * 0.125;
 		float dmod = mix(dfbm, 1.0 - dfbm, clamp(hf * 5.0, 0.0, 1.0));
-		base = clamp((base - dmod * 0.45) / max(1.0 - dmod * 0.45, 1e-3), 0.0, 1.0);
+		base = clamp((base - dmod * 0.55) / max(1.0 - dmod * 0.55, 1e-3), 0.0, 1.0);
 	}
 	return base * cloud_density;
 }
@@ -117,6 +117,14 @@ vec4 march_clouds(sampler2D t_lut, sampler2D amb_lut, vec3 ro, vec2 cam_xz, vec3
 	float mu_amb = sun_direction.y * 0.5 + 0.5;
 	vec3 amb_top = texture(amb_lut, vec2(mu_amb, 0.75)).rgb * sun_illuminance;
 	vec3 amb_low = texture(amb_lut, vec2(mu_amb, 0.25)).rgb * sun_illuminance;
+	// Thick decks scatter light many times: greyer, brighter undersides.
+	float deck = smoothstep(0.55, 0.95, cloud_coverage);
+	amb_top = mix(amb_top, vec3(luminance(amb_top)), 0.35 + 0.5 * deck);
+	amb_low = mix(amb_low, vec3(luminance(amb_low)), 0.35 + 0.5 * deck);
+	vec3 deck_light = light_transmittance(t_lut, r_out, sun_direction.y) * sun_illuminance
+			* max(sun_direction.y, 0.0) * 0.06 * deck;
+	amb_top += deck_light;
+	amb_low += deck_light * 0.6;
 	if (use_moon) {
 		amb_top += moon_illuminance * vec3(0.04, 0.05, 0.08);
 		amb_low += moon_illuminance * vec3(0.03, 0.035, 0.05);
@@ -160,7 +168,7 @@ vec4 march_clouds(sampler2D t_lut, sampler2D amb_lut, vec3 ro, vec2 cam_xz, vec3
 			float powder = 1.0 - exp(-d * 6.0);
 			sun_term *= mix(1.0, powder * 1.6, 0.45 * (1.0 - cos_t * 0.5));
 			vec3 amb = mix(amb_low * 0.6, amb_top, clamp(hf * 1.4, 0.0, 1.0));
-			vec3 s = lcol * sun_term + amb * (0.55 + 0.45 * hf);
+			vec3 s = lcol * sun_term * 1.6 + amb * (0.4 + 0.5 * hf);
 			float ext = d * CLOUD_EXTINCTION;
 			float step_t = exp(-ext * dt);
 			float contrib = trans * (1.0 - step_t);

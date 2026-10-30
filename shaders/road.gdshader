@@ -51,7 +51,7 @@ void fragment() {
 	float shoulder = smoothstep(half_width - 0.05, half_width + 0.25, ax);
 	vec3 galb = texture(gravel_albedo, vec2(x, y) / 2.5).rgb;
 	vec3 gn = texture(gravel_normal, vec2(x, y) / 2.5).rgb * 2.0 - 1.0;
-	alb = mix(alb, galb * 0.5, shoulder);
+	alb = mix(alb, mix(galb, vec3(dot(galb, vec3(0.33))), 0.6) * 0.42, shoulder);
 	tn = mix(tn, gn, shoulder);
 	rough = mix(rough, 0.9, shoulder);
 

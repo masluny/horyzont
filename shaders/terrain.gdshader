@@ -70,7 +70,7 @@ float vnoise(vec2 p) {
 // The grass texture is used for detail only; colour comes from a meadow palette.
 vec3 meadow_color(float macro, float ridge) {
 	float dry = clamp(macro * 1.2 - 0.25 + ridge * 0.8, 0.0, 1.0);
-	return mix(vec3(0.062, 0.115, 0.026), vec3(0.17, 0.165, 0.055), dry);
+	return mix(vec3(0.045, 0.12, 0.022), vec3(0.13, 0.15, 0.045), dry);
 }
 
 vec3 meadow_tint(vec3 tex, float macro, float ridge) {
@@ -114,48 +114,62 @@ void fragment() {
 	vec3 alb = vec3(0.0);
 	vec3 arm = vec3(1.0, 0.8, 0.0);
 	vec3 n = n_geo;
-	if (dist < 900.0) {
+	if (dist < 700.0) {
 		vec2 uv_g = world_pos.xz / 3.2;
 		vec2 uv_s = world_pos.xz / 3.5;
 		vec2 uv_v = world_pos.xz / 2.6;
-		vec4 ga = sample_mix(grass_albedo, uv_g, tile_n);
-		ga.rgb = meadow_tint(ga.rgb, macro, ridge);
-		vec4 sa = sample_mix(sand_albedo, uv_s, tile_n);
-		vec4 va = sample_mix(gravel_albedo, uv_v, tile_n) * vec4(0.55, 0.55, 0.55, 1.0);
-		// Rock: biplanar on the two dominant side planes + top.
-		vec3 bw = pow(abs(n_geo), vec3(4.0));
-		bw /= bw.x + bw.y + bw.z;
-		vec2 uv_rx = world_pos.zy / 7.0;
-		vec2 uv_rz = world_pos.xy / 7.0;
-		vec2 uv_ry = world_pos.xz / 7.0;
-		vec4 ra = texture(rock_albedo, uv_rx) * bw.x + texture(rock_albedo, uv_rz) * bw.z + texture(rock_albedo, uv_ry) * bw.y;
-
+		vec3 a_g = vec3(0.0), a_s = vec3(0.0), a_v = vec3(0.0), a_r = vec3(0.0);
+		vec3 m_g = vec3(1.0, 0.8, 0.0), m_s = m_g, m_v = m_g, m_r = m_g;
+		vec3 t_g = vec3(0.0, 0.0, 1.0), t_s = t_g, t_v = t_g;
+		vec3 p_r = vec3(0.0);
+		// Only sample the materials that are actually present here.
+		if (w_grass > 0.003) {
+			a_g = meadow_tint(sample_mix(grass_albedo, uv_g, tile_n).rgb, macro, ridge);
+			m_g = texture(grass_arm, uv_g).rgb;
+			t_g = texture(grass_normal, uv_g).rgb * 2.0 - 1.0;
+		}
+		if (w_sand > 0.003) {
+			a_s = sample_mix(sand_albedo, uv_s, tile_n).rgb;
+			m_s = texture(sand_arm, uv_s).rgb;
+			t_s = texture(sand_normal, uv_s).rgb * 2.0 - 1.0;
+		}
+		if (w_gravel > 0.003) {
+			a_v = texture(gravel_albedo, uv_v).rgb * 0.55;
+			m_v = texture(gravel_arm, uv_v).rgb;
+			t_v = texture(gravel_normal, uv_v).rgb * 2.0 - 1.0;
+		}
+		if (w_rock > 0.003) {
+			// Biplanar: the two dominant projections only.
+			vec3 bw = pow(abs(n_geo), vec3(4.0));
+			bool side_x = bw.x > bw.z;
+			vec2 uv_side = side_x ? world_pos.zy / 7.0 : world_pos.xy / 7.0;
+			vec2 uv_top = world_pos.xz / 7.0;
+			float ws = side_x ? bw.x : bw.z;
+			float wt = bw.y;
+			float sum = ws + wt;
+			ws /= sum;
+			wt /= sum;
+			a_r = texture(rock_albedo, uv_side).rgb * ws + texture(rock_albedo, uv_top).rgb * wt;
+			m_r = texture(rock_arm, uv_side).rgb * ws + texture(rock_arm, uv_top).rgb * wt;
+			vec3 rs = texture(rock_normal, uv_side).rgb * 2.0 - 1.0;
+			vec3 rt = texture(rock_normal, uv_top).rgb * 2.0 - 1.0;
+			p_r = (side_x ? vec3(0.0, rs.y, rs.x) : vec3(rs.x, rs.y, 0.0)) * ws + vec3(rt.x, 0.0, -rt.y) * wt;
+		}
 		// Height-aware blending using albedo luminance as a height proxy.
-		float hg = dot(ga.rgb, vec3(0.33)) + w_grass;
-		float hs = dot(sa.rgb, vec3(0.33)) + w_sand;
-		float hv = dot(va.rgb, vec3(0.33)) + w_gravel;
-		float hr = dot(ra.rgb, vec3(0.33)) + w_rock;
-		float hmax = max(max(hg, hs), max(hv, hr)) - 0.18;
-		vec4 bwt = max(vec4(hg, hs, hv, hr) - hmax, 0.0) * vec4(w_grass, w_sand, w_gravel, w_rock);
+		vec4 hgt = vec4(dot(a_g, vec3(0.33)), dot(a_s, vec3(0.33)), dot(a_v, vec3(0.33)), dot(a_r, vec3(0.33)))
+				+ vec4(w_grass, w_sand, w_gravel, w_rock);
+		float hmax = max(max(hgt.x, hgt.y), max(hgt.z, hgt.w)) - 0.18;
+		vec4 bwt = max(hgt - hmax, 0.0) * vec4(w_grass, w_sand, w_gravel, w_rock);
 		bwt /= max(bwt.x + bwt.y + bwt.z + bwt.w, 1e-4);
-
-		alb = ga.rgb * bwt.x + sa.rgb * bwt.y + va.rgb * bwt.z + ra.rgb * bwt.w;
-		arm = sample_mix(grass_arm, uv_g, tile_n).rgb * bwt.x + sample_mix(sand_arm, uv_s, tile_n).rgb * bwt.y
-				+ sample_mix(gravel_arm, uv_v, tile_n).rgb * bwt.z
-				+ (texture(rock_arm, uv_rx).rgb * bw.x + texture(rock_arm, uv_rz).rgb * bw.z + texture(rock_arm, uv_ry).rgb * bw.y) * bwt.w;
-		vec3 tn = (sample_mix(grass_normal, uv_g, tile_n).rgb * bwt.x + sample_mix(sand_normal, uv_s, tile_n).rgb * bwt.y
-				+ sample_mix(gravel_normal, uv_v, tile_n).rgb * bwt.z) * 2.0 - 1.0;
-		vec3 rn_x = texture(rock_normal, uv_rx).rgb * 2.0 - 1.0;
-		vec3 rn_z = texture(rock_normal, uv_rz).rgb * 2.0 - 1.0;
-		vec3 rn_y = texture(rock_normal, uv_ry).rgb * 2.0 - 1.0;
-		float fade = 1.0 - smoothstep(300.0, 900.0, dist);
-		// Whiteout-style perturbation in world space.
-		vec3 pert = vec3(tn.x, 0.0, -tn.y) * (1.0 - bwt.w)
-				+ (vec3(0.0, rn_x.y, rn_x.x) * bw.x + vec3(rn_z.x, rn_z.y, 0.0) * bw.z + vec3(rn_y.x, 0.0, -rn_y.y) * bw.y) * bwt.w;
+		alb = a_g * bwt.x + a_s * bwt.y + a_v * bwt.z + a_r * bwt.w;
+		arm = m_g * bwt.x + m_s * bwt.y + m_v * bwt.z + m_r * bwt.w;
+		vec3 tn = t_g * bwt.x + t_s * bwt.y + t_v * bwt.z;
+		float fade = 1.0 - smoothstep(250.0, 700.0, dist);
+		vec3 pert = vec3(tn.x, 0.0, -tn.y) + p_r * bwt.w;
 		n = normalize(n_geo + pert * 0.9 * fade);
-		float far_k = smoothstep(500.0, 900.0, dist);
+		float far_k = smoothstep(400.0, 700.0, dist);
 		vec3 far_alb = meadow_color(macro, ridge) * w_grass + textureLod(sand_albedo, uv_s, 9.0).rgb * w_sand
-				+ textureLod(gravel_albedo, uv_v, 9.0).rgb * w_gravel + textureLod(rock_albedo, uv_ry, 9.0).rgb * w_rock;
+				+ textureLod(gravel_albedo, uv_v, 9.0).rgb * 0.55 * w_gravel + textureLod(rock_albedo, uv_g, 9.0).rgb * w_rock;
 		alb = mix(alb, far_alb, far_k);
 	} else {
 		vec2 uv = world_pos.xz / 3.2;
@@ -164,13 +178,16 @@ void fragment() {
 		arm = vec3(1.0, 0.85, 0.0);
 	}
 
+	// Gorse and heather patches break up the far meadows.
+	float shrub = smoothstep(0.58, 0.72, vnoise(world_pos.xz * 0.045) * 0.7 + vnoise(world_pos.xz * 0.21) * 0.3 + max(cavity, 0.0) * 1.5);
+	alb = mix(alb, vec3(0.025, 0.05, 0.015), shrub * w_grass * 0.75);
 	// Macro variation: dry patches, lush hollows.
 	alb *= mix(vec3(1.08, 1.02, 0.86), vec3(0.86, 0.95, 0.88), macro) * (1.0 + cavity * 0.25 * (1.0 - w_rock));
 	alb = mix(alb, alb * vec3(0.9, 1.0, 0.8), w_grass * smoothstep(0.0, -0.25, ridge));
 
 	// Rain: darker, glossier, puddles in hollows and on flat ground.
 	float porous = 1.0 - w_rock * 0.5;
-	float puddle = smoothstep(0.55, 0.8, vnoise(world_pos.xz * 0.15) + max(cavity, 0.0) * 2.0 + (1.0 - slope) * 0.2) * smoothstep(0.92, 0.98, n_geo.y);
+	float puddle = smoothstep(0.75, 0.95, vnoise(world_pos.xz * 0.15) * 0.8 + max(cavity, 0.0) * 3.0) * smoothstep(0.96, 0.995, n_geo.y) * smoothstep(0.5, 0.9, wetness);
 	float wet = wetness * (0.6 + 0.4 * puddle);
 	alb *= mix(1.0, 0.55, wet * porous);
 	float rough = mix(arm.g, 0.08, wet * mix(0.5, 1.0, puddle));

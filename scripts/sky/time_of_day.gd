@@ -118,7 +118,7 @@ func update_sky(delta: float) -> void:
 		sun_light.light_color = sun_color
 		sun_light.light_energy = SUN_E / PI * sun_strength
 		sun_light.visible = sun_strength > 0.0005
-		sun_light.shadow_enabled = sun_dir.y > 0.0
+		sun_light.shadow_enabled = sun_dir.y > 0.0 and not sun_light.has_meta("force_no_shadow")
 	if moon_light:
 		_aim_light(moon_light, moon_dir)
 		var t_moon := transmittance(alt_km, moon_dir.y, mie)
