@@ -66,7 +66,7 @@ Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)
   z której vertex shader czyta pozycję po INSTANCE_ID. Bufory MultiMesh się nie zmieniają, więc motion vectors są poprawne.
   `shaders/meadow_decor.gdshader` — kłosy (skan) i kwiaty na tej samej tabeli.
 - `forest.gd`, `tree_gen.gd`, `shaders/tree_*.gdshader` — ~200 tys. drzew i krzewów: LOD0 i LOD1 (siatki, tabela jak w trawie),
-  impostory od 88 m (8 widoków na wariant, wypiekane przy starcie z tych samych siatek). Cienie: LOD1 do 46 m, bryły do 125 m.
+  impostory od 74 m (8 widoków na wariant, wypiekane przy starcie z tych samych siatek). Cienie: LOD1 do 42 m, bryły do 125 m.
 - `props.gd` — murki, domy, barierki, latarnia, skanowane głazy i pnie (`assets/models/baked`), paprocie przy drodze.
 - `road_builder.gd`, `shaders/road.gdshader`, `rain.gd`.
 - `scripts/car/` — `car.gd` (raycast vehicle, autopilot), `car_model.gd` (proceduralne GT), `camera_rig.gd`.
@@ -85,8 +85,13 @@ Pogoda (`Game.weather`): `current_id`, `preset_name()`, `set_preset(id, instant)
 - `cloud_shadow_pass.gdshader` — mapa cieni chmur 256² wokół kamery (8 km), odświeżana co 3 klatki, czytana globalnie.
 
 ## Wydajność (MacBook Air M4, 2940×1846, MetalFX 0.58, preset „wysoka”)
-WYDAJNOSC_PLACEHOLDER
-Stały koszt (MetalFX, tonemapping) to ok. 6,2 ms, reszta klatki skaluje się z liczbą pikseli.
+Pomiary w oknie 2940×1658, skala 0.58, trasa otwarta / las (ms na klatkę, średnio):
+- Wysoka (MetalFX Temporal): 21,9 / 25,0 ms, czyli 46 / 40 fps.
+- Średnia (MetalFX Spatial + SMAA): 15,4 / 18,5 ms, czyli 65 / 54 fps.
+- Niska: 12,8 / 16,7 ms, czyli 78 / 60 fps.
+MetalFX Temporal kosztuje około 6 ms ponad bilinear, TAA z MetalFX Spatial około 3 ms.
+Uwaga: ławka i zrzuty muszą wołać `apply_quality`, inaczej lecą bez MetalFX (bilinear). Nocne „60 fps” z 30.10 było takim błędem.
+Air przy ciągłym obciążeniu zwalnia o kilka ms, między pomiarami trzeba robić przerwy.
 Przy szukaniu kosztów: `--perf_off=trees,grass,clouds,ssr,ssao,glow,shadow,treeshadow,impostors,sharpen`, a ławka w konkretnym
 miejscu: `dev/run.sh 60 -- --bench=6 --mode=chase --uncapped --road_near=3200,0,1600 --time=13 --weather=cumulusy`.
 Pomiary mają sens tylko gdy nic innego nie używa GPU.

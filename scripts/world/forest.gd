@@ -137,7 +137,7 @@ func _scatter(extra: Array[Vector3]) -> void:
 			# Thickets, not an even sprinkle.
 			var thicket := sin(x * 0.0127 + sin(z * 0.0091) * 2.0) * cos(z * 0.0143 - sin(x * 0.0071) * 2.0) * 0.5 + 0.5
 			thicket = clampf((thicket - 0.42) * 3.0, 0.0, 1.0)
-			var keep := eco[i + 2] / 255.0 * 0.75 * thicket + eco[i + 1] / 255.0 * 0.5
+			var keep := eco[i + 2] / 255.0 * 0.75 * thicket + eco[i + 1] / 255.0 * 0.3
 			if rng.randf() >= keep:
 				continue
 			var h := _data.height_at(x, z)

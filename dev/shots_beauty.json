@@ -1,8 +1,148 @@
-[ {"time": 19.55, "weather": "zlota_mgielka", "drive": 9, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/01_zlota_godzina.png", "frames": 2, "width": 1600},
-  {"time": 20.05, "weather": "pogodnie", "cam": [-4250, 7, 300], "look": [-6000, 30, -1100], "out": "/Users/macbookkacper/dev/horyzont/screenshots/02_zachod_nad_morzem.png", "frames": 60, "width": 1600},
-  {"time": 20.85, "weather": "pogodnie", "cam": [-3360, 30, -760], "look": [-3444, 34, -835], "out": "/Users/macbookkacper/dev/horyzont/screenshots/03_latarnia_niebieska_godzina.png", "frames": 60, "width": 1600},
-  {"time": 4.5, "weather": "poranna_mgla", "drive": 8, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/04_poranna_mgla.png", "frames": 2, "width": 1600},
-  {"time": 13.0, "weather": "cumulusy", "drive": 6, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/05_cumulusy.png", "frames": 2, "width": 1600},
-  {"time": 19.8, "weather": "burzowy_zachod", "drive": 8, "mode": "cinema", "out": "/Users/macbookkacper/dev/horyzont/screenshots/06_burzowy_zachod.png", "frames": 2, "width": 1600},
-  {"time": 15.0, "weather": "deszcz", "drive": 6, "mode": "chase", "out": "/Users/macbookkacper/dev/horyzont/screenshots/07_deszcz.png", "frames": 2, "width": 1600},
-  {"time": 0.5, "weather": "pogodnie", "drive": 6, "mode": "far", "out": "/Users/macbookkacper/dev/horyzont/screenshots/08_noc.png", "frames": 2, "width": 1600} ]
+[
+{
+"time": 19.2,
+"weather": "zlota_mgielka",
+"drive": 6,
+"road_near": [
+-3200,
+600
+],
+"mode": "chase",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/01_zlota_godzina.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 19.75,
+"weather": "cumulusy",
+"cam": [
+-3400,
+30,
+560
+],
+"look": [
+-4400,
+200,
+-500
+],
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/02_zachod_nad_morzem.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 17.2,
+"weather": "pogodnie",
+"drive": 6,
+"road_near": [
+3200,
+1600
+],
+"mode": "chase",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/03_droga_przez_las.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 5.6,
+"weather": "poranna_mgla",
+"drive": 6,
+"road_near": [
+-1000,
+3000
+],
+"mode": "chase",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/04_poranna_mgla.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 13.0,
+"weather": "cumulusy",
+"cam": [
+-3345,
+26,
+510
+],
+"look": [
+-3100,
+120,
+430
+],
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/05_cumulusy.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 19.6,
+"weather": "burzowy_zachod",
+"drive": 6,
+"road_near": [
+1139,
+-2364
+],
+"mode": "far",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/06_burzowy_zachod.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 15.0,
+"weather": "deszcz",
+"drive": 6,
+"road_near": [
+1139,
+-2364
+],
+"mode": "chase",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/07_deszcz.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 0.8,
+"weather": "pogodnie",
+"drive": 6,
+"road_near": [
+3200,
+1600
+],
+"mode": "far",
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/08_noc.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 17.0,
+"weather": "cumulusy",
+"cam": [
+2600,
+520,
+-2400
+],
+"look": [
+800,
+320,
+-1000
+],
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/09_wyspa_z_lotu.png",
+"frames": 45,
+"width": 2000
+},
+{
+"time": 18.6,
+"weather": "pogodnie",
+"cam": [
+-3560,
+12,
+-1300
+],
+"look": [
+-3400,
+40,
+-1000
+],
+"out": "/Users/macbookkacper/dev/horyzont/screenshots/10_klify.png",
+"frames": 45,
+"width": 2000
+}
+]

@@ -52,14 +52,14 @@ vec2 tree_place(int id, inout vec3 v, inout vec3 n, inout vec3 t, float flex, fl
 	return tree_fade(length(inst.xz - cam.xz));
 }
 
-global uniform float frame_jitter;
+global uniform float dither_jitter;
 
 void tree_dither(vec2 frag, vec2 fade) {
 	if (fade.x >= 0.999 && fade.y >= 0.999) {
 		return;
 	}
 	// Interleaved gradient noise, shifted every frame so the upscaler resolves it.
-	vec2 q = frag + frame_jitter * vec2(5.588, 2.113);
+	vec2 q = frag + dither_jitter * vec2(5.588, 2.113);
 	float ign = fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715))));
 	if (fade.x < ign || fade.y < 1.0 - ign) {
 		discard;

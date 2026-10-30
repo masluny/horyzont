@@ -23,6 +23,8 @@ var dome_material: ShaderMaterial
 var sky_material: ShaderMaterial
 var weather_image: Image
 var is_baked := false
+## Without a temporal upscaler the dither pattern must hold still or it flickers.
+var temporal_dither := true
 
 var _transmittance_vp: SubViewport
 var _multiscatter_vp: SubViewport
@@ -61,6 +63,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_frame += 1
 	RenderingServer.global_shader_parameter_set("frame_jitter", float(_frame % 64))
+	RenderingServer.global_shader_parameter_set("dither_jitter", float(_frame % 64) if temporal_dither else 0.0)
 	var cam := get_viewport().get_camera_3d()
 	if cam and dome:
 		dome.global_position = cam.global_position
@@ -204,7 +207,7 @@ func _update_sky_pass(cam: Camera3D) -> void:
 	mat.set_shader_parameter("prev_basis_inv", _prev_basis.inverse())
 	mat.set_shader_parameter("tan_half", Vector2(tan_y * aspect, tan_y))
 	mat.set_shader_parameter("cam_pos", cam.global_position)
-	var settled := 0.1 if Game.clock and Game.clock.time_scale > 30.0 else 0.84
+	var settled := 0.1 if Game.clock and Game.clock.time_scale > 30.0 else 0.92
 	mat.set_shader_parameter("history_weight", settled if _sky_warm > 2 else 0.0)
 	cur.render_target_update_mode = SubViewport.UPDATE_ONCE
 	dome_material.set_shader_parameter("sky_lowres", cur.get_texture())

@@ -13,6 +13,7 @@ func run(path: String) -> void:
 	var shots: Array = JSON.parse_string(text)
 	if not Game.sky.is_baked:
 		await Game.sky.baked
+	Game.world.apply_quality(Game.arg("quality", "wysoka"))
 	for shot in shots:
 		await _render(shot)
 	get_tree().quit()

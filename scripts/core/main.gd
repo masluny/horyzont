@@ -138,7 +138,8 @@ func _ready() -> void:
 	if Game.args.has("weather"):
 		weather.set_preset(Game.arg("weather"), true)
 	if Game.args.has("perf_off"):
-		_apply_perf_off(Game.arg("perf_off").split(","), water, tr)
+		var off: PackedStringArray = Game.arg("perf_off").split(",")
+		_apply_perf_off.call_deferred(off, water, tr)
 	if Game.args.has("bench"):
 		var bench := BenchRunner.new()
 		add_child(bench)
@@ -165,6 +166,17 @@ func _apply_perf_off(what: PackedStringArray, water: Node3D, tr: Node3D) -> void
 			"scale50": get_viewport().scaling_3d_scale = 0.5
 			"grass": grass.visible = false
 			"trees": forest.visible = false
+			"split2": sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+			"split1": sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+			"fsr2": get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
+			"fsr1": get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+			"mfxs": get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_METALFX_SPATIAL
+			"bilinear": get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+			"taa": get_viewport().use_taa = true
+			"fxaa": get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			"smaa": get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_SMAA
+			"scale66": get_viewport().scaling_3d_scale = 0.66
+			"scale70": get_viewport().scaling_3d_scale = 0.7
 			"sharpen": sharpen.visible = false
 			"treeshadow":
 				forest.shadow_range = 0.0
@@ -195,16 +207,16 @@ func apply_quality(q: String) -> void:
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 			sun.directional_shadow_max_distance = 230.0
-			sky.set_cloud_quality(30, 3)
-			if grass: grass.set_density(110)
-			if forest: forest.set_quality(0.8)
+			sky.set_cloud_quality(26, 3)
+			if grass: grass.set_density(105)
+			if forest: forest.set_quality(0.68)
 		"wysoka":
 			env.ssr_enabled = true
 			env.ssr_max_steps = 28
 			env.ssao_enabled = true
 			sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			sun.directional_shadow_max_distance = 280.0
-			sky.set_cloud_quality(34, 4)
+			sun.directional_shadow_max_distance = 230.0
+			sky.set_cloud_quality(28, 4)
 			if grass: grass.set_density(135)
 			if forest: forest.set_quality(1.0)
 		"ultra":
@@ -216,7 +228,15 @@ func apply_quality(q: String) -> void:
 			sky.set_cloud_quality(56, 6)
 			if grass: grass.set_density(162)
 			if forest: forest.set_quality(1.6)
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if OS.get_name() == "macOS" else Viewport.SCALING_3D_MODE_FSR2
+	# Temporal upscaling looks best but costs about 6 ms at this resolution, so the
+	# lower presets use the spatial upscaler with SMAA and stable dithering instead.
+	var temporal := q == "wysoka" or q == "ultra"
+	if OS.get_name() == "macOS":
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if temporal else Viewport.SCALING_3D_MODE_METALFX_SPATIAL
+	else:
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2 if temporal else Viewport.SCALING_3D_MODE_FSR
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED if temporal else Viewport.SCREEN_SPACE_AA_SMAA
+	sky.temporal_dither = temporal
 
 
 func _ui_shot(path: String) -> void:
@@ -400,8 +420,10 @@ func _build_environment() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 1.0
 	env.glow_enabled = true
+	for i in 7:
+		env.set_glow_level(i, 1.0 if i == 3 else 0.0)
 	env.glow_normalized = false
-	env.glow_intensity = 0.35
+	env.glow_intensity = 0.42
 	env.glow_bloom = 0.04
 	env.glow_hdr_threshold = 1.4
 	env.glow_hdr_luminance_cap = 10.0

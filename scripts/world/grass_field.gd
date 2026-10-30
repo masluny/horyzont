@@ -11,7 +11,7 @@ const FINE := 4.0
 const TABLE_WIDTH := 1024
 const TILES := 3
 # Blades per tile and segments per blade. LOD 2 tiles are twice as wide.
-const BLADES: Array[int] = [2000, 460, 300]
+const BLADES: Array[int] = [1700, 400, 260]
 const SEGMENTS: Array[int] = [4, 2, 1]
 
 var material: ShaderMaterial

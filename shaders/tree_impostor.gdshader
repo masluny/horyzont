@@ -13,7 +13,7 @@ uniform vec2 atlas_size = vec2(2048.0, 3072.0);
 uniform float fade_near = 215.0;
 uniform float fade_far = 240.0;
 
-global uniform float frame_jitter;
+global uniform float dither_jitter;
 
 varying float v_view;
 varying float v_row;
@@ -47,7 +47,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 q = FRAGCOORD.xy + frame_jitter * vec2(5.588, 2.113);
+	vec2 q = FRAGCOORD.xy + dither_jitter * vec2(5.588, 2.113);
 	float ign = fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715))));
 	if (v_fade < ign) {
 		discard;

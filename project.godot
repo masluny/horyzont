@@ -161,3 +161,7 @@ cloud_shadow_center={
 "type": "vec2",
 "value": Vector2(0, 0)
 }
+dither_jitter={
+"type": "float",
+"value": 0.0
+}

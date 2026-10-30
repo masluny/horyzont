@@ -12,6 +12,11 @@ func run(seconds: float) -> void:
 	if not Game.sky.is_baked:
 		await Game.sky.baked
 	var world = Game.world
+	world.apply_quality(Game.arg("quality", "wysoka"))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if Game.args.has("perf_off2"):
+		world._apply_perf_off(Game.arg("perf_off2").split(","), null, null)
 	world.set_cinema(true)
 	if Game.args.has("mode") and Game.arg("mode") == "chase":
 		world.camera.set_mode(CameraRig.Mode.CHASE)
