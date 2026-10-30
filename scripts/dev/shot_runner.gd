@@ -33,6 +33,7 @@ func _render(shot: Dictionary) -> void:
 			world.car.place_on_road(world.terrain.nearest_road_index(Vector3(at[0], 0.0, at[1])))
 		elif shot.has("road_index"):
 			world.car.place_on_road(int(shot["road_index"]))
+		world.car.freeze = false
 		await get_tree().physics_frame
 		await get_tree().physics_frame
 		camera.set_process(true)
@@ -46,6 +47,7 @@ func _render(shot: Dictionary) -> void:
 		if shot.has("car_cam"):
 			var cc: Array = shot["car_cam"]
 			camera.set_process(false)
+			world.car.freeze = true
 			var xf: Transform3D = world.car.global_transform
 			camera.global_position = xf * Vector3(cc[0], cc[1], cc[2])
 			camera.look_at(xf * Vector3(0, 0.4, 0))

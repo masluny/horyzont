@@ -27,6 +27,10 @@ func _ready() -> void:
 	mat.albedo_color = Color(0.55, 0.6, 0.65, 0.35)
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
 	mat.disable_receive_shadows = true
+	# Drops right at the lens would be huge white bars.
+	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+	mat.distance_fade_min_distance = 0.6
+	mat.distance_fade_max_distance = 3.5
 	quad.material = mat
 	draw_pass_1 = quad
 	emitting = false

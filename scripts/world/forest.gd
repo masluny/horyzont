@@ -15,9 +15,9 @@ const BODY_POOL := 14
 
 const ROWS_PER_VARIANT := 4
 
-var lod_r0 := 38.0
-var lod_r1 := 88.0
-var shadow_near := 46.0
+var lod_r0 := 32.0
+var lod_r1 := 74.0
+var shadow_near := 42.0
 var shadow_range := 125.0
 
 var tree_count := 0
@@ -337,9 +337,9 @@ func _build_impostors() -> void:
 
 ## Distances scale with the quality preset: 1.0 is "wysoka".
 func set_quality(k: float) -> void:
-	lod_r0 = 38.0 * k
-	lod_r1 = 88.0 * k
-	shadow_near = 46.0 * k
+	lod_r0 = 32.0 * k
+	lod_r1 = 74.0 * k
+	shadow_near = 42.0 * k
 	shadow_range = 125.0 * k
 	for key in _leaf_mats:
 		for m: ShaderMaterial in [_leaf_mats[key], _bark_mats[key]]:
